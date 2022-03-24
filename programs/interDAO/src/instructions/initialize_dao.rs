@@ -1,4 +1,4 @@
-use crate::schema::dao;
+use crate::schema::dao::*;
 use anchor_lang::prelude::*;
 use anchor_spl::token;
 
@@ -6,8 +6,8 @@ use anchor_spl::token;
 pub struct InitializeDAO<'info> {
   #[account(mut)]
   pub authority: Signer<'info>,
-  #[account(init, payer = authority, space = dao::DAO::LEN)]
-  pub dao: Account<'info, dao::DAO>,
+  #[account(init, payer = authority, space = Dao::LEN)]
+  pub dao: Account<'info, Dao>,
   #[account(
     seeds = [
       b"master_key".as_ref(),
