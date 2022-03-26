@@ -1,5 +1,6 @@
 use crate::errors::ErrorCode;
 use crate::schema::{dao::*, proposal::*};
+use crate::traits::{Age, Consensus, Permission};
 use anchor_lang::{
   prelude::*,
   solana_program::{instruction::*, program::*},
@@ -8,12 +9,13 @@ use anchor_lang::{
 #[derive(Accounts)]
 pub struct ExecuteProposal<'info> {
   #[account(mut)]
-  pub authority: Signer<'info>,
+  pub caller: Signer<'info>,
   #[account(
     mut,
     seeds = [
       b"proposal".as_ref(),
-      &dao.key().to_bytes()
+      &dao.key().to_bytes(),
+      &proposal.index.to_le_bytes()
     ],
     bump,
     has_one = dao
@@ -34,15 +36,24 @@ pub struct ExecuteProposal<'info> {
 }
 
 pub fn exec(ctx: Context<ExecuteProposal>) -> Result<()> {
+  let dao = &ctx.accounts.dao;
   let proposal = &mut ctx.accounts.proposal;
-  if proposal.executed {
+  // Validate permission & consensus
+  if !dao.is_authorized_to_execute(ctx.accounts.caller.key()) {
+    return err!(ErrorCode::NoPermission);
+  }
+  if proposal.is_executed() {
     return err!(ErrorCode::ExecutedProposal);
   }
-  if proposal.invoked_program != ctx.accounts.invoked_program.key() {
-    return err!(ErrorCode::InvalidAccountsLength);
+  if !proposal.is_more_than_half() {
+    return err!(ErrorCode::NotConsentedProposal);
   }
+  // Validate data
   if proposal.accounts_len as usize != ctx.remaining_accounts.len() {
-    return err!(ErrorCode::InvalidAccountsLength);
+    return err!(ErrorCode::InvalidDataLength);
+  }
+  if proposal.invoked_program != ctx.accounts.invoked_program.key() {
+    return err!(ErrorCode::InconsistentProposal);
   }
   for (i, acc) in proposal.accounts.iter().enumerate() {
     if acc.pubkey != ctx.remaining_accounts[i].key()

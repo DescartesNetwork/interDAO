@@ -4,3 +4,5 @@ pub mod initialize_proposal;
 pub use initialize_proposal::*;
 pub mod execute_proposal;
 pub use execute_proposal::*;
+pub mod vote;
+pub use vote::*;

@@ -1,13 +1,17 @@
 use anchor_lang::prelude::*;
 
 pub mod constants;
-pub use constants::*;
 pub mod errors;
-pub use errors::*;
-pub mod schema;
-pub use schema::*;
 pub mod instructions;
+pub mod schema;
+pub mod traits;
+pub mod utils;
+
+pub use constants::*;
+pub use errors::*;
 pub use instructions::*;
+pub use schema::*;
+pub use traits::*;
 
 declare_id!("Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS");
 
@@ -15,8 +19,12 @@ declare_id!("Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS");
 pub mod inter_dao {
   use super::*;
 
-  pub fn initialize_dao(ctx: Context<InitializeDAO>) -> Result<()> {
-    initialize_dao::exec(ctx)
+  pub fn initialize_dao(
+    ctx: Context<InitializeDAO>,
+    mechanism: DaoMechanism,
+    total_power: u128,
+  ) -> Result<()> {
+    initialize_dao::exec(ctx, mechanism, total_power)
   }
 
   pub fn initialize_proposal(
@@ -27,6 +35,8 @@ pub mod inter_dao {
     prev_is_writables: Vec<bool>,
     next_is_signers: Vec<bool>,
     next_is_writables: Vec<bool>,
+    start_date: i64,
+    end_date: i64,
   ) -> Result<()> {
     initialize_proposal::exec(
       ctx,
@@ -36,7 +46,13 @@ pub mod inter_dao {
       prev_is_writables,
       next_is_signers,
       next_is_writables,
+      start_date,
+      end_date,
     )
+  }
+
+  pub fn vote(ctx: Context<Vote>, amount: u64) -> Result<()> {
+    vote::exec(ctx, amount)
   }
 
   pub fn execute_proposal(ctx: Context<ExecuteProposal>) -> Result<()> {
