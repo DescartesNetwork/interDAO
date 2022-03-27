@@ -62,4 +62,8 @@ pub mod inter_dao {
   pub fn execute_proposal(ctx: Context<ExecuteProposal>) -> Result<()> {
     execute_proposal::exec(ctx)
   }
+
+  pub fn close(ctx: Context<Close>, index: u32) -> Result<()> {
+    close::exec(ctx, index)
+  }
 }

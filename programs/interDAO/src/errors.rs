@@ -8,10 +8,12 @@ pub enum ErrorCode {
   InvalidDataLength,
   #[msg("Inconsistent proposal's accounts configuration")]
   InconsistentProposal,
-  #[msg("The community don't consent on the proposal yet")]
+  #[msg("The community isn't consenting on the proposal yet")]
   NotConsentedProposal,
-  #[msg("The proposal isn't start yet")]
+  #[msg("The proposal isn't started yet")]
   NotStartedProposal,
+  #[msg("The proposal isn't ended yet")]
+  NotEndedProposal,
   #[msg("The proposal had been ended")]
   EndedProposal,
   #[msg("The proposal had been executed")]

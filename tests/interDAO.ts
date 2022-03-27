@@ -179,7 +179,7 @@ describe('interDAO', () => {
     )
     console.log('Prev Voted Power', prevVotedPower.toString())
 
-    await program.rpc.vote(new BN(0), new BN(2), new BN(currentTime + 30), {
+    await program.rpc.vote(0, new BN(2), new BN(currentTime + 30), {
       accounts: {
         authority: provider.wallet.publicKey,
         src: tokenAccount,
@@ -208,7 +208,7 @@ describe('interDAO', () => {
     )
     console.log('Prev Voted Power', prevVotedPower.toString())
 
-    await program.rpc.void(new BN(0), new BN(1), {
+    await program.rpc.void(0, new BN(1), {
       accounts: {
         authority: provider.wallet.publicKey,
         dst: tokenAccount,
@@ -255,5 +255,32 @@ describe('interDAO', () => {
 
     const { amount: nextAmount } = await spl.account.token.fetch(daoTreasury)
     console.log('Next Amount', nextAmount.toString())
+  })
+
+  it('close the receipt', async () => {
+    const data = await program.account.receipt.fetch(receipt)
+    console.log('Receipt Data', data)
+    await program.rpc.close(0, {
+      accounts: {
+        authority: provider.wallet.publicKey,
+        dst: tokenAccount,
+        treasurer,
+        mint: mint.publicKey,
+        treasury,
+        proposal,
+        dao: dao.publicKey,
+        receipt,
+        tokenProgram: utils.token.TOKEN_PROGRAM_ID,
+        associatedTokenProgram: utils.token.ASSOCIATED_PROGRAM_ID,
+        systemProgram: web3.SystemProgram.programId,
+        rent: web3.SYSVAR_RENT_PUBKEY,
+      },
+    })
+    try {
+      await program.account.receipt.fetch(receipt)
+      throw new Error('The receipt account is not closed correctly')
+    } catch (er) {
+      console.log(er.message)
+    }
   })
 })
