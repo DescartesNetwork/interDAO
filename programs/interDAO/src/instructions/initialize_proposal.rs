@@ -2,6 +2,7 @@ use crate::constants::*;
 use crate::errors::ErrorCode;
 use crate::schema::{dao::*, proposal::*};
 use crate::traits::Permission;
+use crate::utils::current_timestamp;
 use anchor_lang::prelude::*;
 use num_traits::ToPrimitive;
 
@@ -49,6 +50,14 @@ pub fn exec(
     return err!(ErrorCode::NoPermission);
   }
   // Validate data
+  if start_date < 0 {
+    return err!(ErrorCode::InvalidStartDate);
+  }
+  if end_date <= start_date
+    || end_date <= current_timestamp().ok_or(ErrorCode::InvalidCurrentDate)?
+  {
+    return err!(ErrorCode::InvalidEndDate);
+  }
   if pubkeys.len() != prev_is_signers.len()
     || pubkeys.len() != prev_is_writables.len()
     || pubkeys.len() != next_is_signers.len()

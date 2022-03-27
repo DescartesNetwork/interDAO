@@ -53,8 +53,8 @@ pub struct Proposal {
   pub executed: bool,
   pub voted_power: u128,
   pub total_power: u128,
-  pub start_date: i64, // Immediately start by setting zero
-  pub end_date: i64,   // No end date by setting zero
+  pub start_date: i64,
+  pub end_date: i64,
 }
 
 impl Proposal {

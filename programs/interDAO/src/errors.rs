@@ -20,4 +20,10 @@ pub enum ErrorCode {
   NoPermission,
   #[msg("Cannot derive the program address")]
   NoBump,
+  #[msg("Cannot get current date")]
+  InvalidCurrentDate,
+  #[msg("Start date need to be greater than or equal to zero")]
+  InvalidStartDate,
+  #[msg("End date need to be greater than start date and current date")]
+  InvalidEndDate,
 }
