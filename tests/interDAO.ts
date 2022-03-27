@@ -12,6 +12,9 @@ import { InterDao } from '../target/types/inter_dao'
 import { initializeAccount, initializeMint } from './pretest'
 import * as soproxABI from 'soprox-abi'
 
+export const asyncWait = (ms: number) =>
+  new Promise((resolve) => setTimeout(resolve, ms))
+
 // Consensus mechanism
 export const ConsensusMechanism = {
   StakedTokenCounter: { stakedTokenCounter: {} },
@@ -152,7 +155,7 @@ describe('interDAO', () => {
       nextIsWritables,
       ConsensusMechanism.LockedTokenCounter,
       new BN(0),
-      new BN(currentTime + 60 * 60),
+      new BN(currentTime + 60),
       {
         accounts: {
           caller: provider.wallet.publicKey,
@@ -176,7 +179,7 @@ describe('interDAO', () => {
     )
     console.log('Prev Voted Power', prevVotedPower.toString())
 
-    await program.rpc.vote(new BN(0), new BN(2), new BN(currentTime + 60), {
+    await program.rpc.vote(new BN(0), new BN(2), new BN(currentTime + 30), {
       accounts: {
         authority: provider.wallet.publicKey,
         src: tokenAccount,
@@ -229,6 +232,8 @@ describe('interDAO', () => {
   })
 
   it('execute the proposal', async () => {
+    await asyncWait(60000) // Wait for a second
+
     const { amount: prevAmount } = await spl.account.token.fetch(daoTreasury)
     console.log('Prev Amount', prevAmount.toString())
 
