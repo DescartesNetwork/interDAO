@@ -67,7 +67,7 @@ pub fn exec(ctx: Context<Close>, _index: u32) -> Result<()> {
   if !proposal.is_ended() {
     return err!(ErrorCode::NotEndedProposal);
   }
-  // Lock tokens into the treasury
+  // Unlock tokens out of the treasury
   let seeds: &[&[&[u8]]] = &[&[
     b"treasurer".as_ref(),
     &proposal.key().to_bytes(),
