@@ -1,6 +1,6 @@
 use crate::errors::ErrorCode;
 use crate::schema::{dao::*, proposal::*, receipt::*};
-use crate::{Age, Consensus};
+use crate::traits::{Age, Consensus};
 use anchor_lang::prelude::*;
 use anchor_spl::{associated_token, token};
 
