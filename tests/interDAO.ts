@@ -13,19 +13,12 @@ import { initializeAccount, initializeMint } from './pretest'
 import * as soproxABI from 'soprox-abi'
 
 // Consensus mechanism
-type StakedTokenCounter = { stakedTokenCounter: {} }
-type LockedTokenCounter = { lockedTokenCounter: {} }
-export type ConsensusMechanism = StakedTokenCounter | LockedTokenCounter
-export const ConsensusMechanism: Record<string, ConsensusMechanism> = {
+export const ConsensusMechanism = {
   StakedTokenCounter: { stakedTokenCounter: {} },
   LockedTokenCounter: { lockedTokenCounter: {} },
 }
 // Dao mechanism
-type Dictatorial = { dictatorial: {} }
-type Democratic = { democratic: {} }
-type Autonomous = { autonomous: {} }
-export type DaoMechanism = Dictatorial | Democratic | Autonomous
-export const DaoMechanism: Record<string, DaoMechanism> = {
+export const DaoMechanism = {
   Dictatorial: { dictatorial: {} },
   Democratic: { democratic: {} },
   Autonomous: { autonomous: {} },
@@ -157,7 +150,7 @@ describe('interDAO', () => {
       prevIsWritables,
       nextIsSigners,
       nextIsWritables,
-      ConsensusMechanism.StakedTokenCounter,
+      ConsensusMechanism.LockedTokenCounter,
       new BN(0),
       new BN(currentTime + 60 * 60),
       {
