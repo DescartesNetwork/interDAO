@@ -1,6 +1,6 @@
 use anchor_lang::prelude::*;
 
-pub fn current_timestamp() -> Result<i64> {
-  let clock = Clock::get()?;
-  Ok(clock.unix_timestamp)
+pub fn current_timestamp() -> Option<i64> {
+  let clock = Clock::get().ok()?;
+  Some(clock.unix_timestamp)
 }

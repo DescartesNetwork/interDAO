@@ -1,3 +1,4 @@
+use crate::schema::receipt::Receipt;
 use anchor_lang::prelude::*;
 
 ///
@@ -12,7 +13,13 @@ pub trait Permission {
 /// Consensus for proposal
 ///
 pub trait Consensus {
-  fn vote(&mut self, power: u128) -> Option<u128>;
+  fn vote(
+    &mut self,
+    amount: u64,
+    unlocked_date: i64,
+    receipt: &mut Receipt,
+  ) -> Option<(u128, u128)>;
+  fn void(&mut self, amount: u64, receipt: &mut Receipt) -> Option<(u128, u128)>;
   fn is_more_than_half(&self) -> bool;
 }
 

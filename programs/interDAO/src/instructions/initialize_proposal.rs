@@ -38,6 +38,7 @@ pub fn exec(
   prev_is_writables: Vec<bool>,
   next_is_signers: Vec<bool>,
   next_is_writables: Vec<bool>,
+  consensus_mechanism: ConsensusMechanism,
   start_date: i64,
   end_date: i64,
 ) -> Result<()> {
@@ -73,7 +74,8 @@ pub fn exec(
   proposal.dao = dao.key();
   proposal.start_date = start_date;
   proposal.end_date = end_date;
-  proposal.mechanism = dao.mechanism;
+  proposal.dao_mechanism = dao.mechanism;
+  proposal.consensus_mechanism = consensus_mechanism;
   proposal.executed = false;
   proposal.voted_power = 0;
   proposal.total_power = dao.total_power;

@@ -18,4 +18,6 @@ pub enum ErrorCode {
   ExecutedProposal,
   #[msg("No permission")]
   NoPermission,
+  #[msg("Cannot derive the program address")]
+  NoBump,
 }

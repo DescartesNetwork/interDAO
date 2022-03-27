@@ -12,6 +12,15 @@ import { InterDao } from '../target/types/inter_dao'
 import { initializeAccount, initializeMint } from './pretest'
 import * as soproxABI from 'soprox-abi'
 
+// Consensus mechanism
+type StakedTokenCounter = { stakedTokenCounter: {} }
+type LockedTokenCounter = { lockedTokenCounter: {} }
+export type ConsensusMechanism = StakedTokenCounter | LockedTokenCounter
+export const ConsensusMechanism: Record<string, ConsensusMechanism> = {
+  StakedTokenCounter: { stakedTokenCounter: {} },
+  LockedTokenCounter: { lockedTokenCounter: {} },
+}
+// Dao mechanism
 type Dictatorial = { dictatorial: {} }
 type Democratic = { democratic: {} }
 type Autonomous = { autonomous: {} }
@@ -35,6 +44,7 @@ describe('interDAO', () => {
   let masterKey: web3.PublicKey
   let daoTreasury: web3.PublicKey
   let proposal: web3.PublicKey
+  let receipt: web3.PublicKey
   let treasurer: web3.PublicKey
   let treasury: web3.PublicKey
   const currentTime = Math.floor(Number(new Date()) / 1000)
@@ -98,6 +108,17 @@ describe('interDAO', () => {
       mint: mint.publicKey,
       owner: treasurer,
     })
+    const [receiptPublicKey] = await web3.PublicKey.findProgramAddress(
+      [
+        Buffer.from('receipt'),
+        new BN(0).toBuffer('le', 4),
+        dao.publicKey.toBuffer(),
+        proposal.toBuffer(),
+        provider.wallet.publicKey.toBuffer(),
+      ],
+      program.programId,
+    )
+    receipt = receiptPublicKey
   })
 
   it('initialize a DAO', async () => {
@@ -136,6 +157,7 @@ describe('interDAO', () => {
       prevIsWritables,
       nextIsSigners,
       nextIsWritables,
+      ConsensusMechanism.StakedTokenCounter,
       new BN(0),
       new BN(currentTime + 60 * 60),
       {
@@ -161,15 +183,45 @@ describe('interDAO', () => {
     )
     console.log('Prev Voted Power', prevVotedPower.toString())
 
-    await program.rpc.vote(new BN(1), {
+    await program.rpc.vote(new BN(0), new BN(2), new BN(currentTime + 60), {
       accounts: {
-        voter: provider.wallet.publicKey,
+        authority: provider.wallet.publicKey,
         src: tokenAccount,
         treasurer,
         mint: mint.publicKey,
         treasury,
         proposal,
         dao: dao.publicKey,
+        receipt,
+        tokenProgram: utils.token.TOKEN_PROGRAM_ID,
+        associatedTokenProgram: utils.token.ASSOCIATED_PROGRAM_ID,
+        systemProgram: web3.SystemProgram.programId,
+        rent: web3.SYSVAR_RENT_PUBKEY,
+      },
+    })
+
+    const { votedPower: nextVotedPower } = await program.account.proposal.fetch(
+      proposal,
+    )
+    console.log('Next Voted Power', nextVotedPower.toString())
+  })
+
+  it('void the proposal', async () => {
+    const { votedPower: prevVotedPower } = await program.account.proposal.fetch(
+      proposal,
+    )
+    console.log('Prev Voted Power', prevVotedPower.toString())
+
+    await program.rpc.void(new BN(0), new BN(1), {
+      accounts: {
+        authority: provider.wallet.publicKey,
+        dst: tokenAccount,
+        treasurer,
+        mint: mint.publicKey,
+        treasury,
+        proposal,
+        dao: dao.publicKey,
+        receipt,
         tokenProgram: utils.token.TOKEN_PROGRAM_ID,
         associatedTokenProgram: utils.token.ASSOCIATED_PROGRAM_ID,
         systemProgram: web3.SystemProgram.programId,

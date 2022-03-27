@@ -6,22 +6,26 @@ use anchor_spl::{associated_token, token};
 
 #[derive(Accounts)]
 #[instruction(_index: u32)]
-pub struct Vote<'info> {
+pub struct Void<'info> {
   #[account(mut)]
   pub authority: Signer<'info>,
-  #[account(mut, has_one = mint)]
-  pub src: Box<Account<'info, token::TokenAccount>>,
+  #[account(
+    init_if_needed,
+    payer = authority,
+    associated_token::mint = mint,
+    associated_token::authority = authority
+  )]
+  pub dst: Box<Account<'info, token::TokenAccount>>,
   #[account(seeds = [b"treasurer".as_ref(), &proposal.key().to_bytes()], bump)]
   /// CHECK: Just a pure account
   pub treasurer: AccountInfo<'info>,
   pub mint: Box<Account<'info, token::Mint>>,
   #[account(
-    init_if_needed,
-    payer = authority,
+    mut,
     associated_token::mint = mint,
     associated_token::authority = treasurer
   )]
-  pub treasury: Box<Account<'info, token::TokenAccount>>,
+  pub treasury: Account<'info, token::TokenAccount>,
   #[account(
     mut,
     seeds = [
@@ -36,9 +40,7 @@ pub struct Vote<'info> {
   #[account(has_one = mint)]
   pub dao: Account<'info, Dao>,
   #[account(
-    init,
-    payer = authority,
-    space = Receipt::LEN,
+    mut,
     seeds = [
       b"receipt".as_ref(),
       &_index.to_le_bytes(),
@@ -46,7 +48,9 @@ pub struct Vote<'info> {
       &proposal.key().to_bytes(),
       &authority.key().to_bytes()
     ],
-    bump
+    bump,
+    has_one = authority,
+    has_one = proposal
   )]
   pub receipt: Account<'info, Receipt>,
   pub token_program: Program<'info, token::Token>,
@@ -55,35 +59,30 @@ pub struct Vote<'info> {
   pub rent: Sysvar<'info, Rent>,
 }
 
-pub fn exec(ctx: Context<Vote>, _index: u32, amount: u64, unlocked_date: i64) -> Result<()> {
+pub fn exec(ctx: Context<Void>, _index: u32, amount: u64) -> Result<()> {
   let receipt = &mut ctx.accounts.receipt;
   let proposal = &mut ctx.accounts.proposal;
   // Validate permission & consensus
-  if proposal.is_executed() {
-    return err!(ErrorCode::ExecutedProposal);
-  }
-  if !proposal.is_started() {
-    return err!(ErrorCode::NotStartedProposal);
-  }
   if proposal.is_ended() {
     return err!(ErrorCode::EndedProposal);
   }
-  // Init receipt data
-  receipt.authority = ctx.accounts.authority.key();
-  receipt.proposal = proposal.key();
+  // Discount the votes
+  proposal.void(amount, receipt).ok_or(ErrorCode::Overflow)?;
   // Lock tokens into the treasury
-  let transfer_ctx = CpiContext::new(
+  let seeds: &[&[&[u8]]] = &[&[
+    b"treasurer".as_ref(),
+    &proposal.key().to_bytes(),
+    &[*ctx.bumps.get("treasurer").ok_or(ErrorCode::NoBump)?],
+  ]];
+  let transfer_ctx = CpiContext::new_with_signer(
     ctx.accounts.token_program.to_account_info(),
     token::Transfer {
-      from: ctx.accounts.src.to_account_info(),
-      to: ctx.accounts.treasury.to_account_info(),
-      authority: ctx.accounts.authority.to_account_info(),
+      from: ctx.accounts.treasury.to_account_info(),
+      to: ctx.accounts.dst.to_account_info(),
+      authority: ctx.accounts.treasurer.to_account_info(),
     },
+    seeds,
   );
   token::transfer(transfer_ctx, amount)?;
-  // Count the votes
-  proposal
-    .vote(amount, unlocked_date, receipt)
-    .ok_or(ErrorCode::Overflow)?;
   Ok(())
 }

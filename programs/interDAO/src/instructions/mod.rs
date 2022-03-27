@@ -6,3 +6,5 @@ pub mod execute_proposal;
 pub use execute_proposal::*;
 pub mod vote;
 pub use vote::*;
+pub mod void;
+pub use void::*;
