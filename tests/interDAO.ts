@@ -155,7 +155,7 @@ describe('interDAO', () => {
       nextIsSigners,
       nextIsWritables,
       ConsensusMechanism.LockedTokenCounter,
-      new BN(0),
+      new BN(currentTime + 10),
       new BN(currentTime + 60),
       {
         accounts: {
@@ -175,12 +175,14 @@ describe('interDAO', () => {
   })
 
   it('vote the proposal', async () => {
+    await asyncWait(10000) // Wait for 10 seconds
+
     const { votedPower: prevVotedPower } = await program.account.proposal.fetch(
       proposal,
     )
     console.log('Prev Voted Power', prevVotedPower.toString())
 
-    await program.rpc.vote(0, new BN(2), new BN(currentTime + 30), {
+    await program.rpc.vote(0, new BN(2), new BN(currentTime + 60), {
       accounts: {
         authority: provider.wallet.publicKey,
         src: tokenAccount,
@@ -233,7 +235,7 @@ describe('interDAO', () => {
   })
 
   it('execute the proposal', async () => {
-    await asyncWait(60000) // Wait for a second
+    await asyncWait(60000) // Wait for a minute
 
     const { amount: prevAmount } = await spl.account.token.fetch(daoTreasury)
     console.log('Prev Amount', prevAmount.toString())
@@ -298,15 +300,15 @@ describe('interDAO', () => {
   })
 
   it('update total power', async () => {
-    const newTotalPower = new BN(10)
-    await program.rpc.updateTotalPower(newTotalPower, {
+    const newSupply = new BN(10)
+    await program.rpc.updateSupply(newSupply, {
       accounts: {
         authority: provider.wallet.publicKey,
         dao: dao.publicKey,
       },
     })
-    const { totalPower } = await program.account.dao.fetch(dao.publicKey)
-    expect(totalPower.eq(newTotalPower)).true
+    const { supply } = await program.account.dao.fetch(dao.publicKey)
+    expect(supply.eq(newSupply)).true
   })
 
   it('transfer authority', async () => {

@@ -50,7 +50,7 @@ pub fn exec(
     return err!(ErrorCode::NoPermission);
   }
   // Validate data
-  if start_date < 0 {
+  if start_date < current_timestamp().ok_or(ErrorCode::InvalidCurrentDate)? {
     return err!(ErrorCode::InvalidStartDate);
   }
   if end_date <= start_date
@@ -87,7 +87,7 @@ pub fn exec(
   proposal.consensus_mechanism = consensus_mechanism;
   proposal.executed = false;
   proposal.voted_power = 0;
-  proposal.total_power = dao.total_power;
+  proposal.supply = dao.supply;
   // Data for the inter action
   proposal.data_len = data.len().to_u64().ok_or(ErrorCode::Overflow)?;
   proposal.data = data;

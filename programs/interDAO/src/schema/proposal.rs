@@ -52,7 +52,7 @@ pub struct Proposal {
   pub consensus_mechanism: ConsensusMechanism,
   pub executed: bool,
   pub voted_power: u128,
-  pub total_power: u128,
+  pub supply: u128,
   pub start_date: i64,
   pub end_date: i64,
 }
@@ -72,6 +72,22 @@ impl Proposal {
     + U128_SIZE
     + I64_SIZE
     + I64_SIZE; // And a variant data len and accounts len
+
+  pub fn is_more_than_half(&self) -> Option<bool> {
+    let total_power = match self.consensus_mechanism {
+      ConsensusMechanism::StakedTokenCounter => self.supply,
+      ConsensusMechanism::LockedTokenCounter => self
+        .end_date
+        .checked_sub(self.start_date)?
+        .to_u128()?
+        .checked_mul(self.supply)?,
+    };
+    if total_power.checked_sub(self.voted_power)? < self.voted_power {
+      Some(true)
+    } else {
+      Some(false)
+    }
+  }
 }
 
 impl Consensus for Proposal {
@@ -81,8 +97,20 @@ impl Consensus for Proposal {
     unlocked_date: i64,
     receipt: &mut Receipt,
   ) -> Option<(u128, u128)> {
+    msg!(
+      "{} {} {}",
+      self.start_date,
+      self.end_date,
+      self.end_date - self.start_date
+    );
     let safe_locked_date = current_timestamp()?;
     let safe_unlocked_date = cmp::min(self.end_date, unlocked_date);
+    msg!(
+      "{} {} {}",
+      safe_locked_date,
+      unlocked_date,
+      safe_unlocked_date
+    );
     let power = match self.consensus_mechanism {
       ConsensusMechanism::StakedTokenCounter => {
         receipt.locked_date = safe_locked_date;
@@ -98,6 +126,7 @@ impl Consensus for Proposal {
           .checked_mul(amount.to_u128()?)?
       }
     };
+    msg!("power {}", power);
     // Update receipt data
     receipt.amount = amount;
     receipt.power = power;
@@ -121,14 +150,8 @@ impl Consensus for Proposal {
     receipt.power = receipt.power.checked_sub(power)?;
     Some((0, self.voted_power))
   }
-  fn is_more_than_half(&self) -> bool {
-    if self.total_power <= self.voted_power {
-      true
-    } else if self.total_power - self.voted_power < self.voted_power {
-      true
-    } else {
-      false
-    }
+  fn is_consented(&self) -> bool {
+    self.is_more_than_half().unwrap_or(false)
   }
 }
 

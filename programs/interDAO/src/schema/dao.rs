@@ -24,7 +24,7 @@ pub struct Dao {
   pub authority: Pubkey,
   pub mint: Pubkey,
   pub mechanism: DaoMechanism,
-  pub total_power: u128,
+  pub supply: u128,
   pub nonce: u64,
 }
 

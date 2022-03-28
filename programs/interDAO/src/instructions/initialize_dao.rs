@@ -22,17 +22,13 @@ pub struct InitializeDAO<'info> {
   pub rent: Sysvar<'info, Rent>,
 }
 
-pub fn exec(
-  ctx: Context<InitializeDAO>,
-  dao_mechanism: DaoMechanism,
-  total_power: u128,
-) -> Result<()> {
+pub fn exec(ctx: Context<InitializeDAO>, dao_mechanism: DaoMechanism, supply: u128) -> Result<()> {
   let dao = &mut ctx.accounts.dao;
   dao.authority = ctx.accounts.authority.key();
   dao.master_key = ctx.accounts.master_key.key();
   dao.mint = ctx.accounts.mint.key();
   dao.mechanism = dao_mechanism;
-  dao.total_power = total_power;
+  dao.supply = supply;
   dao.nonce = 0;
   Ok(())
 }

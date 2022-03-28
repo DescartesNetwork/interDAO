@@ -74,8 +74,8 @@ pub mod inter_dao {
     update_dao_mechanism::exec(ctx, dao_mechanism)
   }
 
-  pub fn update_total_power(ctx: Context<UpdateTotalPower>, total_power: u128) -> Result<()> {
-    update_total_power::exec(ctx, total_power)
+  pub fn update_supply(ctx: Context<UpdateSupply>, supply: u128) -> Result<()> {
+    update_supply::exec(ctx, supply)
   }
 
   pub fn transfer_authority(ctx: Context<TransferAuthority>) -> Result<()> {

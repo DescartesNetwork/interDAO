@@ -14,5 +14,5 @@ pub mod transfer_authority;
 pub use transfer_authority::*;
 pub mod update_dao_mechanism;
 pub use update_dao_mechanism::*;
-pub mod update_total_power;
-pub use update_total_power::*;
+pub mod update_supply;
+pub use update_supply::*;

@@ -20,7 +20,7 @@ pub trait Consensus {
     receipt: &mut Receipt,
   ) -> Option<(u128, u128)>;
   fn void(&mut self, amount: u64, receipt: &mut Receipt) -> Option<(u128, u128)>;
-  fn is_more_than_half(&self) -> bool;
+  fn is_consented(&self) -> bool;
 }
 
 ///

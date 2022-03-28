@@ -45,7 +45,7 @@ pub fn exec(ctx: Context<ExecuteProposal>) -> Result<()> {
   if proposal.is_executed() {
     return err!(ErrorCode::ExecutedProposal);
   }
-  if !proposal.is_more_than_half() || !proposal.is_ended() {
+  if !proposal.is_consented() || !proposal.is_ended() {
     return err!(ErrorCode::NotConsentedProposal);
   }
   // Validate data
