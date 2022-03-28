@@ -11,6 +11,7 @@ import { Program } from '@project-serum/anchor'
 import { InterDao } from '../target/types/inter_dao'
 import { initializeAccount, initializeMint } from './pretest'
 import * as soproxABI from 'soprox-abi'
+import { expect } from 'chai'
 
 export const asyncWait = (ms: number) =>
   new Promise((resolve) => setTimeout(resolve, ms))
@@ -282,5 +283,42 @@ describe('interDAO', () => {
     } catch (er) {
       console.log(er.message)
     }
+  })
+
+  it('update dao mechanism', async () => {
+    const daoMechanism = DaoMechanism.Democratic
+    await program.rpc.updateDaoMechanism(daoMechanism, {
+      accounts: {
+        authority: provider.wallet.publicKey,
+        dao: dao.publicKey,
+      },
+    })
+    const { mechanism } = await program.account.dao.fetch(dao.publicKey)
+    expect(mechanism).to.deep.equal(daoMechanism)
+  })
+
+  it('update total power', async () => {
+    const newTotalPower = new BN(10)
+    await program.rpc.updateTotalPower(newTotalPower, {
+      accounts: {
+        authority: provider.wallet.publicKey,
+        dao: dao.publicKey,
+      },
+    })
+    const { totalPower } = await program.account.dao.fetch(dao.publicKey)
+    expect(totalPower.eq(newTotalPower)).true
+  })
+
+  it('transfer authority', async () => {
+    const newAuthority = new web3.Keypair().publicKey
+    await program.rpc.transferAuthority({
+      accounts: {
+        authority: provider.wallet.publicKey,
+        newAuthority,
+        dao: dao.publicKey,
+      },
+    })
+    const { authority } = await program.account.dao.fetch(dao.publicKey)
+    expect(authority.equals(newAuthority)).true
   })
 })

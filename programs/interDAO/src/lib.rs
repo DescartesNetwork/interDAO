@@ -66,4 +66,19 @@ pub mod inter_dao {
   pub fn close(ctx: Context<Close>, index: u32) -> Result<()> {
     close::exec(ctx, index)
   }
+
+  pub fn update_dao_mechanism(
+    ctx: Context<UpdateDaoMechanism>,
+    dao_mechanism: DaoMechanism,
+  ) -> Result<()> {
+    update_dao_mechanism::exec(ctx, dao_mechanism)
+  }
+
+  pub fn update_total_power(ctx: Context<UpdateTotalPower>, total_power: u128) -> Result<()> {
+    update_total_power::exec(ctx, total_power)
+  }
+
+  pub fn transfer_authority(ctx: Context<TransferAuthority>) -> Result<()> {
+    transfer_authority::exec(ctx)
+  }
 }
