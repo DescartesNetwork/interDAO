@@ -97,20 +97,8 @@ impl Consensus for Proposal {
     unlocked_date: i64,
     receipt: &mut Receipt,
   ) -> Option<(u128, u128)> {
-    msg!(
-      "{} {} {}",
-      self.start_date,
-      self.end_date,
-      self.end_date - self.start_date
-    );
     let safe_locked_date = current_timestamp()?;
     let safe_unlocked_date = cmp::min(self.end_date, unlocked_date);
-    msg!(
-      "{} {} {}",
-      safe_locked_date,
-      unlocked_date,
-      safe_unlocked_date
-    );
     let power = match self.consensus_mechanism {
       ConsensusMechanism::StakedTokenCounter => {
         receipt.locked_date = safe_locked_date;
@@ -126,7 +114,6 @@ impl Consensus for Proposal {
           .checked_mul(amount.to_u128()?)?
       }
     };
-    msg!("power {}", power);
     // Update receipt data
     receipt.amount = amount;
     receipt.power = power;
