@@ -17,8 +17,8 @@ pub struct InitializeProposal<'info> {
     space = Proposal::HEADER_LEN + VECTOR_OVERHEAD_SIZE + data.len() + VECTOR_OVERHEAD_SIZE + pubkeys.len() * INVOKED_ACCOUNT_SIZE,
     seeds = [
       b"proposal".as_ref(),
-      &dao.key().to_bytes(),
-      &dao.nonce.to_le_bytes()
+      &dao.nonce.to_le_bytes(),
+      &dao.key().to_bytes()
     ],
     bump
   )]

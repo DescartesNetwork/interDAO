@@ -90,8 +90,8 @@ describe('interDAO', () => {
     const [proposalPublicKey] = await web3.PublicKey.findProgramAddress(
       [
         Buffer.from('proposal'),
-        dao.publicKey.toBuffer(),
         new BN(0).toBuffer('le', 8),
+        dao.publicKey.toBuffer(),
       ],
       program.programId,
     )
@@ -108,8 +108,7 @@ describe('interDAO', () => {
     const [receiptPublicKey] = await web3.PublicKey.findProgramAddress(
       [
         Buffer.from('receipt'),
-        new BN(0).toBuffer('le', 4),
-        dao.publicKey.toBuffer(),
+        new BN(0).toBuffer('le', 8),
         proposal.toBuffer(),
         provider.wallet.publicKey.toBuffer(),
       ],
@@ -182,7 +181,7 @@ describe('interDAO', () => {
     )
     console.log('Prev Voted Power', prevVotedPower.toString())
 
-    await program.rpc.vote(0, new BN(2), new BN(currentTime + 60), {
+    await program.rpc.vote(new BN(0), new BN(2), new BN(currentTime + 60), {
       accounts: {
         authority: provider.wallet.publicKey,
         src: tokenAccount,
@@ -211,7 +210,7 @@ describe('interDAO', () => {
     )
     console.log('Prev Voted Power', prevVotedPower.toString())
 
-    await program.rpc.void(0, new BN(1), {
+    await program.rpc.void(new BN(1), {
       accounts: {
         authority: provider.wallet.publicKey,
         dst: tokenAccount,
@@ -263,7 +262,7 @@ describe('interDAO', () => {
   it('close the receipt', async () => {
     const data = await program.account.receipt.fetch(receipt)
     console.log('Receipt Data', data)
-    await program.rpc.close(0, {
+    await program.rpc.close({
       accounts: {
         authority: provider.wallet.publicKey,
         dst: tokenAccount,

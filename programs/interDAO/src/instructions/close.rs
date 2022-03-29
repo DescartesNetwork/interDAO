@@ -5,7 +5,6 @@ use anchor_lang::prelude::*;
 use anchor_spl::{associated_token, token};
 
 #[derive(Accounts)]
-#[instruction(_index: u32)]
 pub struct Close<'info> {
   #[account(mut)]
   pub authority: Signer<'info>,
@@ -30,8 +29,8 @@ pub struct Close<'info> {
     mut,
     seeds = [
       b"proposal".as_ref(),
-      &dao.key().to_bytes(),
-      &proposal.index.to_le_bytes()
+      &proposal.index.to_le_bytes(),
+      &dao.key().to_bytes()
     ],
     bump,
     has_one = dao
@@ -43,8 +42,7 @@ pub struct Close<'info> {
     mut,
     seeds = [
       b"receipt".as_ref(),
-      &_index.to_le_bytes(),
-      &dao.key().to_bytes(),
+      &receipt.index.to_le_bytes(),
       &proposal.key().to_bytes(),
       &authority.key().to_bytes()
     ],
@@ -60,7 +58,7 @@ pub struct Close<'info> {
   pub rent: Sysvar<'info, Rent>,
 }
 
-pub fn exec(ctx: Context<Close>, _index: u32) -> Result<()> {
+pub fn exec(ctx: Context<Close>) -> Result<()> {
   let receipt = &ctx.accounts.receipt;
   let proposal = &ctx.accounts.proposal;
   // Validate permission & consensus

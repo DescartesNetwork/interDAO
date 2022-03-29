@@ -14,8 +14,8 @@ pub struct ExecuteProposal<'info> {
     mut,
     seeds = [
       b"proposal".as_ref(),
-      &dao.key().to_bytes(),
-      &proposal.index.to_le_bytes()
+      &proposal.index.to_le_bytes(),
+      &dao.key().to_bytes()
     ],
     bump,
     has_one = dao

@@ -1,7 +1,7 @@
 [features]
 seeds = false
 [programs.localnet]
-inter_dao = "Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS"
+inter_dao = "Bivu7zHQj6QP8E9nHV3Vt9tXmyqKe5hRQ5zKNoAASRhn"
 
 [registry]
 url = "https://anchor.projectserum.com"

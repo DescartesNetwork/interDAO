@@ -11,10 +11,10 @@
     "resolveJsonModule": true,
     "declaration": true
   },
-  "include": ["lib"],
+  "include": ["app"],
   "exclude": ["node_modules", "tests", "programs"],
   "typedocOptions": {
-    "entryPoints": ["./lib/index.ts"],
+    "entryPoints": ["./app/index.ts"],
     "out": "docs"
   }
 }

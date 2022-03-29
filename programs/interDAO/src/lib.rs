@@ -11,7 +11,7 @@ pub use errors::*;
 pub use instructions::*;
 pub use schema::*;
 
-declare_id!("Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS");
+declare_id!("Bivu7zHQj6QP8E9nHV3Vt9tXmyqKe5hRQ5zKNoAASRhn");
 
 #[program]
 pub mod inter_dao {
@@ -20,9 +20,9 @@ pub mod inter_dao {
   pub fn initialize_dao(
     ctx: Context<InitializeDAO>,
     dao_mechanism: DaoMechanism,
-    total_power: u128,
+    supply: u128,
   ) -> Result<()> {
-    initialize_dao::exec(ctx, dao_mechanism, total_power)
+    initialize_dao::exec(ctx, dao_mechanism, supply)
   }
 
   pub fn initialize_proposal(
@@ -51,20 +51,20 @@ pub mod inter_dao {
     )
   }
 
-  pub fn vote(ctx: Context<Vote>, index: u32, amount: u64, unlocked_date: i64) -> Result<()> {
+  pub fn vote(ctx: Context<Vote>, index: u64, amount: u64, unlocked_date: i64) -> Result<()> {
     vote::exec(ctx, index, amount, unlocked_date)
   }
 
-  pub fn void(ctx: Context<Void>, index: u32, amount: u64) -> Result<()> {
-    void::exec(ctx, index, amount)
+  pub fn void(ctx: Context<Void>, amount: u64) -> Result<()> {
+    void::exec(ctx, amount)
   }
 
   pub fn execute_proposal(ctx: Context<ExecuteProposal>) -> Result<()> {
     execute_proposal::exec(ctx)
   }
 
-  pub fn close(ctx: Context<Close>, index: u32) -> Result<()> {
-    close::exec(ctx, index)
+  pub fn close(ctx: Context<Close>) -> Result<()> {
+    close::exec(ctx)
   }
 
   pub fn update_dao_mechanism(

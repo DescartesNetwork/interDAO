@@ -5,7 +5,7 @@ use anchor_lang::prelude::*;
 use anchor_spl::{associated_token, token};
 
 #[derive(Accounts)]
-#[instruction(_index: u32)]
+#[instruction(index: u64)]
 pub struct Vote<'info> {
   #[account(mut)]
   pub authority: Signer<'info>,
@@ -26,8 +26,8 @@ pub struct Vote<'info> {
     mut,
     seeds = [
       b"proposal".as_ref(),
-      &dao.key().to_bytes(),
-      &proposal.index.to_le_bytes()
+      &proposal.index.to_le_bytes(),
+      &dao.key().to_bytes()
     ],
     bump,
     has_one = dao
@@ -41,8 +41,7 @@ pub struct Vote<'info> {
     space = Receipt::LEN,
     seeds = [
       b"receipt".as_ref(),
-      &_index.to_le_bytes(),
-      &dao.key().to_bytes(),
+      &index.to_le_bytes(),
       &proposal.key().to_bytes(),
       &authority.key().to_bytes()
     ],
@@ -55,7 +54,7 @@ pub struct Vote<'info> {
   pub rent: Sysvar<'info, Rent>,
 }
 
-pub fn exec(ctx: Context<Vote>, _index: u32, amount: u64, unlocked_date: i64) -> Result<()> {
+pub fn exec(ctx: Context<Vote>, index: u64, amount: u64, unlocked_date: i64) -> Result<()> {
   let receipt = &mut ctx.accounts.receipt;
   let proposal = &mut ctx.accounts.proposal;
   // Validate permission & consensus
@@ -69,6 +68,7 @@ pub fn exec(ctx: Context<Vote>, _index: u32, amount: u64, unlocked_date: i64) ->
     return err!(ErrorCode::EndedProposal);
   }
   // Init receipt data
+  receipt.index = index;
   receipt.authority = ctx.accounts.authority.key();
   receipt.proposal = proposal.key();
   // Lock tokens into the treasury

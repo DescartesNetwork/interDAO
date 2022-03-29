@@ -9,12 +9,12 @@ use std::cmp;
 ///
 /// Consensus mechanism
 ///
-/// Stake Token Counter
+/// Staked Token Counter
 /// The voted power is counted by the number of staked tokens to the proposal.
 /// Voters can unstake anytime, but the voted power will be excluded.
 ///
 /// Locked Token Counter
-/// The voted power is counted by multiplication of the locked time and the number of locked tokens to the proposal.
+/// The voted power is counted by multiplication of the committed time and the number of locked tokens to the proposal.
 /// Voters can't unlock during the campaign.
 ///
 #[repr(u8)]

@@ -1,9 +1,9 @@
 {
   "name": "@interdao/core",
   "version": "0.1.0",
-  "main": "dist/lib/index.js",
+  "main": "dist/app/index.js",
   "scripts": {
-    "start": "nodemon lib/index.ts",
+    "start": "nodemon app/index.ts",
     "build": "npm run clean && tsc",
     "clean": "rm -rf ./dist",
     "predeploy": "typedoc --excludePrivate --excludeProtected ./lib/index.ts",
