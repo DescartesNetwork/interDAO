@@ -4,6 +4,14 @@ use crate::traits::Age;
 use anchor_lang::prelude::*;
 use anchor_spl::{associated_token, token};
 
+#[event]
+pub struct CloseEvent {
+  pub authority: Pubkey,
+  pub receipt: Pubkey,
+  pub mint: Pubkey,
+  pub amount: u64,
+}
+
 #[derive(Accounts)]
 pub struct Close<'info> {
   #[account(mut)]
@@ -84,5 +92,13 @@ pub fn exec(ctx: Context<Close>) -> Result<()> {
     seeds,
   );
   token::transfer(transfer_ctx, receipt.amount)?;
+
+  emit!(CloseEvent {
+    authority: receipt.authority,
+    receipt: receipt.key(),
+    mint: ctx.accounts.mint.key(),
+    amount: receipt.amount
+  });
+
   Ok(())
 }

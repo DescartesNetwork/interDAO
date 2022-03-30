@@ -2,6 +2,15 @@ use crate::schema::dao::*;
 use anchor_lang::prelude::*;
 use anchor_spl::token;
 
+#[event]
+pub struct InitializeDAOEvent {
+  pub dao: Pubkey,
+  pub authority: Pubkey,
+  pub mint: Pubkey,
+  pub mechanism: DaoMechanism,
+  pub supply: u128,
+}
+
 #[derive(Accounts)]
 pub struct InitializeDAO<'info> {
   #[account(mut)]
@@ -30,5 +39,14 @@ pub fn exec(ctx: Context<InitializeDAO>, dao_mechanism: DaoMechanism, supply: u1
   dao.mechanism = dao_mechanism;
   dao.supply = supply;
   dao.nonce = 0;
+
+  emit!(InitializeDAOEvent {
+    dao: dao.key(),
+    authority: dao.authority,
+    mint: dao.mint,
+    mechanism: dao.mechanism,
+    supply: dao.supply
+  });
+
   Ok(())
 }

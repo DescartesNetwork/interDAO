@@ -6,6 +6,16 @@ use crate::utils::current_timestamp;
 use anchor_lang::prelude::*;
 use num_traits::ToPrimitive;
 
+#[event]
+pub struct InitializeProposalEvent {
+  pub proposal: Pubkey,
+  pub dao: Pubkey,
+  pub caller: Pubkey,
+  pub invoked_program: Pubkey,
+  pub data: Vec<u8>,
+  pub accounts: Vec<InvokedAccount>,
+}
+
 #[derive(Accounts)]
 #[instruction(data: Vec<u8>, pubkeys: Vec<Pubkey>)]
 pub struct InitializeProposal<'info> {
@@ -90,15 +100,24 @@ pub fn exec(
   proposal.supply = dao.supply;
   // Data for the inter action
   proposal.data_len = data.len().to_u64().ok_or(ErrorCode::Overflow)?;
-  proposal.data = data;
+  proposal.data = data.clone();
   // Accounts for the inter action
   proposal.accounts_len = accounts.len().to_u8().ok_or(ErrorCode::Overflow)?;
-  proposal.accounts = accounts;
+  proposal.accounts = accounts.clone();
   // Program to execute
   proposal.invoked_program = ctx.accounts.invoked_program.key();
 
   // Update dao data
   dao.nonce = dao.nonce.checked_add(1).ok_or(ErrorCode::Overflow)?;
+
+  emit!(InitializeProposalEvent {
+    proposal: proposal.key(),
+    dao: proposal.dao,
+    caller: proposal.creator,
+    invoked_program: proposal.invoked_program,
+    data: proposal.data.clone(),
+    accounts: proposal.accounts.clone(),
+  });
 
   Ok(())
 }

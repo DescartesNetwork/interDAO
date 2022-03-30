@@ -45,6 +45,7 @@ describe('interDAO', () => {
   let treasurer: web3.PublicKey
   let treasury: web3.PublicKey
   const currentTime = Math.floor(Number(new Date()) / 1000)
+  let listeners: number[] = []
 
   before(async () => {
     // Init a mint
@@ -115,6 +116,17 @@ describe('interDAO', () => {
       program.programId,
     )
     receipt = receiptPublicKey
+  })
+
+  it('add listeners', async () => {
+    program.idl.events.forEach(async ({ name }) => {
+      const id = await program.addEventListener(name, (event, slot) => {
+        console.group(`Event: ${name} / Slot: ${slot}`)
+        console.log(event)
+        console.groupEnd()
+      })
+      listeners.push(id)
+    })
   })
 
   it('initialize a DAO', async () => {
@@ -321,5 +333,11 @@ describe('interDAO', () => {
     })
     const { authority } = await program.account.dao.fetch(dao.publicKey)
     expect(authority.equals(newAuthority)).true
+  })
+
+  it('remove listeners', async () => {
+    listeners.forEach(async (id) => {
+      await program.removeEventListener(id)
+    })
   })
 })

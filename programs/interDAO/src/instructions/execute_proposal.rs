@@ -6,6 +6,12 @@ use anchor_lang::{
   solana_program::{instruction::*, program::*},
 };
 
+#[event]
+pub struct ExecuteProposalEvent {
+  pub proposal: Pubkey,
+  pub caller: Pubkey,
+}
+
 #[derive(Accounts)]
 pub struct ExecuteProposal<'info> {
   #[account(mut)]
@@ -86,5 +92,11 @@ pub fn exec(ctx: Context<ExecuteProposal>) -> Result<()> {
   invoke_signed(&ix, ctx.remaining_accounts, seeds)?;
   // Success
   proposal.executed = true;
+
+  emit!(ExecuteProposalEvent {
+    proposal: proposal.key(),
+    caller: ctx.accounts.caller.key()
+  });
+
   Ok(())
 }
