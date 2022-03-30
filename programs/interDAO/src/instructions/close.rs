@@ -59,12 +59,15 @@ pub struct Close<'info> {
 }
 
 pub fn exec(ctx: Context<Close>) -> Result<()> {
-  let receipt = &ctx.accounts.receipt;
+  let receipt = &mut ctx.accounts.receipt;
   let proposal = &ctx.accounts.proposal;
   // Validate permission & consensus
   if !proposal.is_ended() {
     return err!(ErrorCode::NotEndedProposal);
   }
+  // Safety clear data
+  receipt.amount = 0;
+  receipt.power = 0;
   // Unlock tokens out of the treasury
   let seeds: &[&[&[u8]]] = &[&[
     b"treasurer".as_ref(),

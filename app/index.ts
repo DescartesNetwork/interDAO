@@ -40,6 +40,14 @@ export const ConsensusMechanisms: Record<string, ConsensusMechanism> = {
   LockedTokenCounter: { lockedTokenCounter: {} },
 }
 
+export type InvokedAccount = {
+  pubkey: web3.PublicKey
+  prevIsSigner: boolean
+  prevIsWritable: boolean
+  nextIsSigner: boolean
+  nextIsWritable: boolean
+}
+
 class InterDAO {
   private _connection: web3.Connection
   private _provider: Provider
@@ -213,6 +221,47 @@ class InterDAO {
   }
 
   /**
+   * Find an available receipt's index of a wallet for a proposal
+   * @param proposalAddress Proposal address
+   * @param authorityAddress Wallet address
+   * @returns
+   */
+  findAvailableReceiptIndex = async (
+    proposalAddress: string,
+    authorityAddress: string,
+  ) => {
+    if (!isAddress(proposalAddress)) throw new Error('Invalid proposal address')
+    if (!isAddress(authorityAddress))
+      throw new Error('Invalid authority address')
+
+    let receiptIndex = new BN(0)
+    const one = new BN(1)
+    while (true) {
+      try {
+        await this.deriveReceiptAddress(receiptIndex, proposalAddress, true)
+        receiptIndex = receiptIndex.add(one)
+      } catch (er: any) {
+        return receiptIndex
+      }
+    }
+  }
+
+  /**
+   * Derive treasurer address of a proposal.
+   * @param proposalAddress Proposal address.
+   * @returns Treasurer address that holds the secure token treasuries of the printer.
+   */
+  deriveTreasurerAddress = async (proposalAddress: string) => {
+    if (!isAddress(proposalAddress)) throw new Error('Invalid proposal address')
+    const proposalPublicKey = new web3.PublicKey(proposalAddress)
+    const [treasurerPublicKey] = await web3.PublicKey.findProgramAddress(
+      [Buffer.from('treasurer'), proposalPublicKey.toBuffer()],
+      this.program.programId,
+    )
+    return treasurerPublicKey.toBase58()
+  }
+
+  /**
    * Derive master address of a dao.
    * @param daoAddress Dao address.
    * @returns Master address that's on behelf of the DAO to execute transactions.
@@ -265,6 +314,327 @@ class InterDAO {
       },
     )
     return { txId, daoAddress: dao.publicKey.toBase58() }
+  }
+
+  /**
+   * Initialize a proposal for a DAO.
+   * @param daoAddress The token (mint) that be be accepted to vote in the DAO.
+   * @param data The tracsaction data for the action.
+   * @param pubkeys The involved account public keys for the action.
+   * @param prevIsSigners
+   * @param prevIsWritables
+   * @param nextIsSigners
+   * @param nextIsWritables
+   * @param startDate Start voting
+   * @param endDate End voting
+   * @param consensusMechanism (Optional) Consensus mechanism. Default is StakedTokenCounter.
+   * @returns { txId, proposalAddress }
+   */
+  initializeProposal = async (
+    daoAddress: string,
+    invokedProgramAddress: string,
+    data: Buffer | Uint8Array,
+    pubkeys: web3.PublicKey[],
+    prevIsSigners: boolean[],
+    prevIsWritables: boolean[],
+    nextIsSigners: boolean[],
+    nextIsWritables: boolean[],
+    startDate: number,
+    endDate: number,
+    consensusMechanism: ConsensusMechanism = ConsensusMechanisms.StakedTokenCounter,
+  ) => {
+    if (!isAddress(daoAddress)) throw new Error('Invalid DAO address')
+    if (
+      pubkeys.length !== prevIsSigners.length ||
+      pubkeys.length !== prevIsWritables.length ||
+      pubkeys.length !== nextIsSigners.length ||
+      pubkeys.length !== nextIsWritables.length
+    )
+      throw new Error(
+        'Invalid length of pubkeys and thier flags (signer, writable)',
+      )
+    const currentTime = Math.ceil(Number(new Date()) / 1000)
+    if (startDate <= currentTime) throw new Error('Invalid start date')
+    if (endDate <= startDate) throw new Error('Invalid end date')
+
+    const { nonce } = await this.getDaoData(daoAddress)
+
+    const proposalAddress = await this.deriveProposalAddress(daoAddress, nonce)
+    const proposalPublicKey = new web3.PublicKey(proposalAddress)
+    const daoPublicKey = new web3.PublicKey(daoAddress)
+    const invokedProgramPublicKey = new web3.PublicKey(invokedProgramAddress)
+    const txId = await this.program.rpc.initializeProposal(
+      data,
+      pubkeys,
+      prevIsSigners,
+      prevIsWritables,
+      nextIsSigners,
+      nextIsWritables,
+      consensusMechanism,
+      startDate,
+      endDate,
+      {
+        accounts: {
+          caller: this._provider.wallet.publicKey,
+          proposal: proposalPublicKey,
+          dao: daoPublicKey,
+          invokedProgram: invokedProgramPublicKey,
+          systemProgram: web3.SystemProgram.programId,
+          rent: web3.SYSVAR_RENT_PUBKEY,
+        },
+      },
+    )
+    return { txId, proposalAddress }
+  }
+
+  /**
+   * Execute a proposal for a DAO.
+   * @param daoAddress The token (mint) that be be accepted to vote in the DAO.
+   * @returns { txId, proposalAddress }
+   */
+  executeProposal = async (proposalAddress: string) => {
+    if (!isAddress(proposalAddress)) throw new Error('Invalid proposal address')
+
+    const {
+      accounts,
+      dao: daoPublicKey,
+      invokedProgram,
+    } = await this.getProposalData(proposalAddress)
+    const remainingAccounts = (accounts as InvokedAccount[]).map(
+      ({ pubkey, prevIsSigner, prevIsWritable }) => ({
+        pubkey,
+        isSigner: prevIsSigner,
+        isWritable: prevIsWritable,
+      }),
+    )
+
+    const proposalPublicKey = new web3.PublicKey(proposalAddress)
+    const masterKey = await this.deriveMasterAddress(daoPublicKey.toBase58())
+    const txId = await this.program.rpc.executeProposal({
+      accounts: {
+        caller: this._provider.wallet.publicKey,
+        proposal: proposalPublicKey,
+        dao: daoPublicKey,
+        masterKey,
+        invokedProgram,
+      },
+      remainingAccounts,
+    })
+    return { txId }
+  }
+
+  /**
+   * Vote a proposal.
+   * @param proposalAddress Proposal address.
+   * @param amount Amount of tokens to vote.
+   * @param unlockedDate Unlocked date of the tokens.
+   * @returns { txId, receiptAddress }
+   */
+  vote = async (proposalAddress: string, amount: BN, unlockedDate: BN) => {
+    if (!isAddress(proposalAddress)) throw new Error('Invalid proposal address')
+    if (amount.isNeg() || amount.isZero()) throw new Error('Invalid amount')
+    const currentTime = Math.ceil(Number(new Date()) / 1000)
+    if (currentTime <= unlockedDate.toNumber())
+      throw new Error('Invalid unlocked date')
+
+    const proposalPublicKey = new web3.PublicKey(proposalAddress)
+    const { dao: daoPublicKey } = await this.getProposalData(proposalAddress)
+    const { mint: mintPublicKey } = await this.getDaoData(
+      daoPublicKey.toBase58(),
+    )
+    const authorityPublicKey = this._provider.wallet.publicKey
+    const srcPublicKey = await utils.token.associatedAddress({
+      mint: mintPublicKey,
+      owner: authorityPublicKey,
+    })
+    const index = await this.findAvailableReceiptIndex(
+      proposalAddress,
+      authorityPublicKey.toBase58(),
+    )
+    const receiptAddress = await this.deriveReceiptAddress(
+      index,
+      proposalAddress,
+    )
+    const receiptPublicKey = new web3.PublicKey(receiptAddress)
+    const treasurerAddress = await this.deriveTreasurerAddress(proposalAddress)
+    const treasurerPublicKey = new web3.PublicKey(treasurerAddress)
+    const treasuryPublicKey = await utils.token.associatedAddress({
+      mint: mintPublicKey,
+      owner: treasurerPublicKey,
+    })
+
+    const txId = await this.program.rpc.vote(index, amount, unlockedDate, {
+      accounts: {
+        authority: authorityPublicKey,
+        src: srcPublicKey,
+        treasurer: treasurerPublicKey,
+        mint: mintPublicKey,
+        treasury: treasuryPublicKey,
+        proposal: proposalPublicKey,
+        dao: daoPublicKey,
+        receipt: receiptPublicKey,
+        tokenProgram: utils.token.TOKEN_PROGRAM_ID,
+        associatedTokenProgram: utils.token.ASSOCIATED_PROGRAM_ID,
+        systemProgram: web3.SystemProgram.programId,
+        rent: web3.SYSVAR_RENT_PUBKEY,
+      },
+    })
+    return { txId, receiptAddress }
+  }
+
+  /**
+   * Void a number of voted tokens.
+   * @param receiptAddress Receipt address.
+   * @param amount Amount of tokens to void.
+   * @returns { txId, receiptAddress }
+   */
+  void = async (receiptAddress: string, amount: BN) => {
+    if (!isAddress(receiptAddress)) throw new Error('Invalid receipt address')
+    const { amount: votedAmount, proposal: proposalPublicKey } =
+      await this.getReceiptData(receiptAddress)
+    if (amount.gt(votedAmount)) throw new Error('Invalid amount')
+
+    const proposalAddress = proposalPublicKey.toBase58()
+    const { dao: daoPublicKey } = await this.getProposalData(proposalAddress)
+    const { mint: mintPublicKey } = await this.getDaoData(
+      daoPublicKey.toBase58(),
+    )
+    const authorityPublicKey = this._provider.wallet.publicKey
+    const dstPublicKey = await utils.token.associatedAddress({
+      mint: mintPublicKey,
+      owner: authorityPublicKey,
+    })
+    const receiptPublicKey = new web3.PublicKey(receiptAddress)
+    const treasurerAddress = await this.deriveTreasurerAddress(proposalAddress)
+    const treasurerPublicKey = new web3.PublicKey(treasurerAddress)
+    const treasuryPublicKey = await utils.token.associatedAddress({
+      mint: mintPublicKey,
+      owner: treasurerPublicKey,
+    })
+
+    const txId = await this.program.rpc.void(amount, {
+      accounts: {
+        authority: authorityPublicKey,
+        dst: dstPublicKey,
+        treasurer: treasurerPublicKey,
+        mint: mintPublicKey,
+        treasury: treasuryPublicKey,
+        proposal: proposalPublicKey,
+        dao: daoPublicKey,
+        receipt: receiptPublicKey,
+        tokenProgram: utils.token.TOKEN_PROGRAM_ID,
+        associatedTokenProgram: utils.token.ASSOCIATED_PROGRAM_ID,
+        systemProgram: web3.SystemProgram.programId,
+        rent: web3.SYSVAR_RENT_PUBKEY,
+      },
+    })
+    return { txId, receiptAddress }
+  }
+
+  /**
+   * Close receipts and collect tokens and lamports back.
+   * @param receiptAddress Receipt address.
+   * @param amount Amount of tokens to void.
+   * @returns { txId, receiptAddress }
+   */
+  close = async (receiptAddress: string) => {
+    if (!isAddress(receiptAddress)) throw new Error('Invalid receipt address')
+
+    const { proposal: proposalPublicKey } = await this.getReceiptData(
+      receiptAddress,
+    )
+    const proposalAddress = proposalPublicKey.toBase58()
+    const { dao: daoPublicKey } = await this.getProposalData(proposalAddress)
+    const { mint: mintPublicKey } = await this.getDaoData(
+      daoPublicKey.toBase58(),
+    )
+    const authorityPublicKey = this._provider.wallet.publicKey
+    const dstPublicKey = await utils.token.associatedAddress({
+      mint: mintPublicKey,
+      owner: authorityPublicKey,
+    })
+    const receiptPublicKey = new web3.PublicKey(receiptAddress)
+    const treasurerAddress = await this.deriveTreasurerAddress(proposalAddress)
+    const treasurerPublicKey = new web3.PublicKey(treasurerAddress)
+    const treasuryPublicKey = await utils.token.associatedAddress({
+      mint: mintPublicKey,
+      owner: treasurerPublicKey,
+    })
+
+    const txId = await this.program.rpc.close({
+      accounts: {
+        authority: authorityPublicKey,
+        dst: dstPublicKey,
+        treasurer: treasurerPublicKey,
+        mint: mintPublicKey,
+        treasury: treasuryPublicKey,
+        proposal: proposalPublicKey,
+        dao: daoPublicKey,
+        receipt: receiptPublicKey,
+        tokenProgram: utils.token.TOKEN_PROGRAM_ID,
+        associatedTokenProgram: utils.token.ASSOCIATED_PROGRAM_ID,
+        systemProgram: web3.SystemProgram.programId,
+        rent: web3.SYSVAR_RENT_PUBKEY,
+      },
+    })
+    return { txId, receiptAddress }
+  }
+
+  /**
+   * Update DAO's supply
+   * @param supply The new supply.
+   * @param daoAddress DAO address.
+   * @returns { txId }
+   */
+  updateDaoSupply = async (supply: BN, daoAddress: string) => {
+    if (supply.isNeg() || supply.isZero()) throw new Error('Invalid supply')
+    if (!isAddress(daoAddress)) throw new Error('Invalid DAO address')
+    const txId = await this.program.rpc.updateSupply(supply, {
+      accounts: {
+        authority: this._provider.wallet.publicKey,
+        dao: new web3.PublicKey(daoAddress),
+      },
+    })
+    return { txId }
+  }
+
+  /**
+   * Update DAO's mechanism
+   * @param daoMechanism The new mechanism.
+   * @param daoAddress DAO address.
+   * @returns { txId }
+   */
+  updateDaoMechanism = async (
+    daoMechanism: DaoMechanism,
+    daoAddress: string,
+  ) => {
+    if (!isAddress(daoAddress)) throw new Error('Invalid DAO address')
+    const txId = await this.program.rpc.updateDaoMechanism(daoMechanism, {
+      accounts: {
+        authority: this._provider.wallet.publicKey,
+        dao: new web3.PublicKey(daoAddress),
+      },
+    })
+    return { txId }
+  }
+
+  /**
+   * Transfer the DAO authority
+   * @param newAuthority The new taxman authority (the function will auto derive the taxman account for the authority).
+   * @param daoAddress DAO address.
+   * @returns { txId }
+   */
+  transferAuthority = async (newAuthority: string, daoAddress: string) => {
+    if (!isAddress(newAuthority)) throw new Error('Invalid authority address')
+    if (!isAddress(daoAddress)) throw new Error('Invalid DAO address')
+    const txId = await this.program.rpc.transferAuthority({
+      accounts: {
+        authority: this._provider.wallet.publicKey,
+        newAuthority: new web3.PublicKey(newAuthority),
+        dao: new web3.PublicKey(daoAddress),
+      },
+    })
+    return { txId }
   }
 }
 
