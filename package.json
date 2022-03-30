@@ -1,12 +1,12 @@
 {
   "name": "@interdao/core",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "main": "dist/app/index.js",
   "scripts": {
     "start": "nodemon app/index.ts",
     "build": "npm run clean && tsc",
     "clean": "rm -rf ./dist",
-    "predeploy": "typedoc --excludePrivate --excludeProtected ./lib/index.ts",
+    "predeploy": "typedoc --excludePrivate --excludeProtected ./app/index.ts",
     "deploy": "echo js.interdao.so >> ./docs/CNAME && gh-pages -d docs",
     "test": "npm run build && mocha --require ts-node/register -t 120000 lib-test/**/*.test.ts"
   },
