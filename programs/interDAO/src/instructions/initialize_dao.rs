@@ -19,13 +19,13 @@ pub struct InitializeDAO<'info> {
   pub dao: Account<'info, Dao>,
   #[account(
     seeds = [
-      b"master_key".as_ref(),
+      b"master".as_ref(),
       &dao.key().to_bytes()
     ],
     bump
   )]
   /// CHECK: Just a pure account
-  pub master_key: AccountInfo<'info>,
+  pub master: AccountInfo<'info>,
   pub mint: Account<'info, token::Mint>,
   pub system_program: Program<'info, System>,
   pub rent: Sysvar<'info, Rent>,
@@ -34,7 +34,7 @@ pub struct InitializeDAO<'info> {
 pub fn exec(ctx: Context<InitializeDAO>, dao_mechanism: DaoMechanism, supply: u128) -> Result<()> {
   let dao = &mut ctx.accounts.dao;
   dao.authority = ctx.accounts.authority.key();
-  dao.master_key = ctx.accounts.master_key.key();
+  dao.master = ctx.accounts.master.key();
   dao.mint = ctx.accounts.mint.key();
   dao.mechanism = dao_mechanism;
   dao.supply = supply;

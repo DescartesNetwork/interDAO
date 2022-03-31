@@ -17,12 +17,12 @@ export const asyncWait = (ms: number) =>
   new Promise((resolve) => setTimeout(resolve, ms))
 
 // Consensus mechanism
-export const ConsensusMechanism = {
+export const ConsensusMechanisms = {
   StakedTokenCounter: { stakedTokenCounter: {} },
   LockedTokenCounter: { lockedTokenCounter: {} },
 }
 // Dao mechanism
-export const DaoMechanism = {
+export const DaoMechanisms = {
   Dictatorial: { dictatorial: {} },
   Democratic: { democratic: {} },
   Autonomous: { autonomous: {} },
@@ -38,7 +38,7 @@ describe('interDAO', () => {
   const mint = new web3.Keypair()
   let tokenAccount: web3.PublicKey
   const dao = new web3.Keypair()
-  let masterKey: web3.PublicKey
+  let master: web3.PublicKey
   let daoTreasury: web3.PublicKey
   let proposal: web3.PublicKey
   let receipt: web3.PublicKey
@@ -70,16 +70,16 @@ describe('interDAO', () => {
     })
     // Derive master account
     const [masterKeyPublicKey] = await web3.PublicKey.findProgramAddress(
-      [Buffer.from('master_key'), dao.publicKey.toBuffer()],
+      [Buffer.from('master'), dao.publicKey.toBuffer()],
       program.programId,
     )
-    masterKey = masterKeyPublicKey
+    master = masterKeyPublicKey
     // Derive treasury account
     daoTreasury = await utils.token.associatedAddress({
       mint: mint.publicKey,
-      owner: masterKey,
+      owner: master,
     })
-    await initializeAccount(daoTreasury, mint.publicKey, masterKey, provider)
+    await initializeAccount(daoTreasury, mint.publicKey, master, provider)
     await spl.rpc.mintTo(new BN(1_000_000_000_000), {
       accounts: {
         mint: mint.publicKey,
@@ -130,11 +130,11 @@ describe('interDAO', () => {
   })
 
   it('initialize a DAO', async () => {
-    await program.rpc.initializeDao(DaoMechanism.Autonomous, new BN(1), {
+    await program.rpc.initializeDao(DaoMechanisms.Autonomous, new BN(1), {
       accounts: {
         dao: dao.publicKey,
         authority: provider.wallet.publicKey,
-        masterKey,
+        master,
         mint: mint.publicKey,
         systemProgram: web3.SystemProgram.programId,
         rent: web3.SYSVAR_RENT_PUBKEY,
@@ -153,7 +153,7 @@ describe('interDAO', () => {
       ],
       { code: 3, amount: 1000n },
     )
-    const pubkeys = [daoTreasury, tokenAccount, masterKey]
+    const pubkeys = [daoTreasury, tokenAccount, master]
     const prevIsSigners = [false, false, false]
     const prevIsWritables = [true, true, true]
     const nextIsSigners = [false, false, true]
@@ -165,7 +165,7 @@ describe('interDAO', () => {
       prevIsWritables,
       nextIsSigners,
       nextIsWritables,
-      ConsensusMechanism.LockedTokenCounter,
+      ConsensusMechanisms.LockedTokenCounter,
       new BN(currentTime + 10),
       new BN(currentTime + 60),
       {
@@ -254,14 +254,14 @@ describe('interDAO', () => {
     const remainingAccounts = [
       { pubkey: daoTreasury, isSigner: false, isWritable: true },
       { pubkey: tokenAccount, isSigner: false, isWritable: true },
-      { pubkey: masterKey, isSigner: false, isWritable: true },
+      { pubkey: master, isSigner: false, isWritable: true },
     ]
     await program.rpc.executeProposal({
       accounts: {
         caller: provider.wallet.publicKey,
         proposal,
         dao: dao.publicKey,
-        masterKey,
+        master,
         invokedProgram: spl.programId,
       },
       remainingAccounts,
@@ -299,7 +299,7 @@ describe('interDAO', () => {
   })
 
   it('update dao mechanism', async () => {
-    const daoMechanism = DaoMechanism.Democratic
+    const daoMechanism = DaoMechanisms.Democratic
     await program.rpc.updateDaoMechanism(daoMechanism, {
       accounts: {
         authority: provider.wallet.publicKey,

@@ -1,4 +1,4 @@
-import { Program, SplToken, utils, web3 } from '@project-serum/anchor'
+import { Program, Provider, SplToken, utils, web3 } from '@project-serum/anchor'
 
 export const initializeMint = async (
   decimals: number,
@@ -25,12 +25,13 @@ export const initializeMint = async (
 export const initializeAccount = async (
   associatedTokenAddress: string,
   tokenAddress: string,
-  splProgram: Program<SplToken>,
+  authority: web3.PublicKey,
+  provider: Provider,
 ) => {
   const ix = new web3.TransactionInstruction({
     keys: [
       {
-        pubkey: splProgram.provider.wallet.publicKey,
+        pubkey: provider.wallet.publicKey,
         isSigner: true,
         isWritable: true,
       },
@@ -40,7 +41,7 @@ export const initializeAccount = async (
         isWritable: true,
       },
       {
-        pubkey: splProgram.provider.wallet.publicKey,
+        pubkey: authority,
         isSigner: false,
         isWritable: false,
       },
@@ -55,7 +56,7 @@ export const initializeAccount = async (
         isWritable: false,
       },
       {
-        pubkey: splProgram.programId,
+        pubkey: utils.token.TOKEN_PROGRAM_ID,
         isSigner: false,
         isWritable: false,
       },
@@ -69,5 +70,8 @@ export const initializeAccount = async (
     data: Buffer.from([]),
   })
   const tx = new web3.Transaction().add(ix)
-  return await splProgram.provider.send(tx)
+  return await provider.send(tx)
 }
+
+export const asyncWait = (ms: number) =>
+  new Promise((resolve) => setTimeout(resolve, ms))

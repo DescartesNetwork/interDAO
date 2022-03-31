@@ -30,13 +30,13 @@ pub struct ExecuteProposal<'info> {
   pub dao: Account<'info, Dao>,
   #[account(
     seeds = [
-      b"master_key".as_ref(),
+      b"master".as_ref(),
       &dao.key().to_bytes()
     ],
     bump
   )]
   /// CHECK: Just a pure account
-  pub master_key: AccountInfo<'info>,
+  pub master: AccountInfo<'info>,
   /// CHECK: Just a pure account
   pub invoked_program: AccountInfo<'info>,
 }
@@ -85,9 +85,9 @@ pub fn exec(ctx: Context<ExecuteProposal>) -> Result<()> {
     data,
   };
   let seeds: &[&[&[u8]]] = &[&[
-    b"master_key".as_ref(),
+    b"master".as_ref(),
     &ctx.accounts.dao.key().to_bytes(),
-    &[*ctx.bumps.get("master_key").unwrap()],
+    &[*ctx.bumps.get("master").unwrap()],
   ]];
   invoke_signed(&ix, ctx.remaining_accounts, seeds)?;
   // Success

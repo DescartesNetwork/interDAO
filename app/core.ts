@@ -197,7 +197,7 @@ class InterDAO {
     const receiptPublicKey = await findReceipt(
       receiptIndex,
       new web3.PublicKey(proposalAddress),
-      this.program.provider.wallet.publicKey,
+      this._provider.wallet.publicKey,
       this.program.programId,
     )
     const receiptAddress = receiptPublicKey.toBase58()
@@ -225,7 +225,7 @@ class InterDAO {
       if (!receiptIndex.eq(onchainIndex)) throw new Error('Violated index')
     }
 
-    return proposalAddress
+    return receiptAddress
   }
 
   /**
@@ -278,7 +278,7 @@ class InterDAO {
     if (!isAddress(daoAddress)) throw new Error('Invalid DAO address')
     const daoPublicKey = new web3.PublicKey(daoAddress)
     const [masterPublicKey] = await web3.PublicKey.findProgramAddress(
-      [Buffer.from('master_key'), daoPublicKey.toBuffer()],
+      [Buffer.from('master'), daoPublicKey.toBuffer()],
       this.program.programId,
     )
     return masterPublicKey.toBase58()
@@ -313,7 +313,7 @@ class InterDAO {
         accounts: {
           dao: dao.publicKey,
           authority: this._provider.wallet.publicKey,
-          masterKey: masterPublicKey,
+          master: masterPublicKey,
           mint: tokenPublicKey,
           systemProgram: web3.SystemProgram.programId,
           rent: web3.SYSVAR_RENT_PUBKEY,
@@ -379,8 +379,8 @@ class InterDAO {
       nextIsSigners,
       nextIsWritables,
       consensusMechanism,
-      startDate,
-      endDate,
+      new BN(startDate),
+      new BN(endDate),
       {
         accounts: {
           caller: this._provider.wallet.publicKey,
@@ -417,13 +417,15 @@ class InterDAO {
     )
 
     const proposalPublicKey = new web3.PublicKey(proposalAddress)
-    const masterKey = await this.deriveMasterAddress(daoPublicKey.toBase58())
+    const masterPublicKey = await this.deriveMasterAddress(
+      daoPublicKey.toBase58(),
+    )
     const txId = await this.program.rpc.executeProposal({
       accounts: {
         caller: this._provider.wallet.publicKey,
         proposal: proposalPublicKey,
         dao: daoPublicKey,
-        masterKey,
+        master: masterPublicKey,
         invokedProgram,
       },
       remainingAccounts,
@@ -438,12 +440,11 @@ class InterDAO {
    * @param unlockedDate Unlocked date of the tokens.
    * @returns { txId, receiptAddress }
    */
-  vote = async (proposalAddress: string, amount: BN, unlockedDate: BN) => {
+  vote = async (proposalAddress: string, amount: BN, unlockedDate: number) => {
     if (!isAddress(proposalAddress)) throw new Error('Invalid proposal address')
     if (amount.isNeg() || amount.isZero()) throw new Error('Invalid amount')
     const currentTime = Math.ceil(Number(new Date()) / 1000)
-    if (currentTime <= unlockedDate.toNumber())
-      throw new Error('Invalid unlocked date')
+    if (unlockedDate <= currentTime) throw new Error('Invalid unlocked date')
 
     const proposalPublicKey = new web3.PublicKey(proposalAddress)
     const { dao: daoPublicKey } = await this.getProposalData(proposalAddress)
@@ -471,22 +472,27 @@ class InterDAO {
       owner: treasurerPublicKey,
     })
 
-    const txId = await this.program.rpc.vote(index, amount, unlockedDate, {
-      accounts: {
-        authority: authorityPublicKey,
-        src: srcPublicKey,
-        treasurer: treasurerPublicKey,
-        mint: mintPublicKey,
-        treasury: treasuryPublicKey,
-        proposal: proposalPublicKey,
-        dao: daoPublicKey,
-        receipt: receiptPublicKey,
-        tokenProgram: utils.token.TOKEN_PROGRAM_ID,
-        associatedTokenProgram: utils.token.ASSOCIATED_PROGRAM_ID,
-        systemProgram: web3.SystemProgram.programId,
-        rent: web3.SYSVAR_RENT_PUBKEY,
+    const txId = await this.program.rpc.vote(
+      index,
+      amount,
+      new BN(unlockedDate),
+      {
+        accounts: {
+          authority: authorityPublicKey,
+          src: srcPublicKey,
+          treasurer: treasurerPublicKey,
+          mint: mintPublicKey,
+          treasury: treasuryPublicKey,
+          proposal: proposalPublicKey,
+          dao: daoPublicKey,
+          receipt: receiptPublicKey,
+          tokenProgram: utils.token.TOKEN_PROGRAM_ID,
+          associatedTokenProgram: utils.token.ASSOCIATED_PROGRAM_ID,
+          systemProgram: web3.SystemProgram.programId,
+          rent: web3.SYSVAR_RENT_PUBKEY,
+        },
       },
-    })
+    )
     return { txId, receiptAddress }
   }
 

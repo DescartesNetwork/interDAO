@@ -20,7 +20,7 @@ impl Default for DaoMechanism {
 
 #[account]
 pub struct Dao {
-  pub master_key: Pubkey,
+  pub master: Pubkey,
   pub authority: Pubkey,
   pub mint: Pubkey,
   pub mechanism: DaoMechanism,

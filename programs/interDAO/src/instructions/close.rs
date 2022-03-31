@@ -73,9 +73,6 @@ pub fn exec(ctx: Context<Close>) -> Result<()> {
   if !proposal.is_ended() {
     return err!(ErrorCode::NotEndedProposal);
   }
-  // Safety clear data
-  receipt.amount = 0;
-  receipt.power = 0;
   // Unlock tokens out of the treasury
   let seeds: &[&[&[u8]]] = &[&[
     b"treasurer".as_ref(),
@@ -99,6 +96,10 @@ pub fn exec(ctx: Context<Close>) -> Result<()> {
     mint: ctx.accounts.mint.key(),
     amount: receipt.amount
   });
+
+  // Safety clear data
+  receipt.amount = 0;
+  receipt.power = 0;
 
   Ok(())
 }
