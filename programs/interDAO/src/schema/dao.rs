@@ -24,13 +24,13 @@ pub struct Dao {
   pub authority: Pubkey,
   pub mint: Pubkey,
   pub mechanism: DaoMechanism,
-  pub supply: u128,
+  pub supply: u64,
   pub nonce: u64,
 }
 
 impl Dao {
   pub const LEN: usize =
-    DISCRIMINATOR_SIZE + PUBKEY_SIZE + PUBKEY_SIZE + PUBKEY_SIZE + U8_SIZE + U128_SIZE + U64_SIZE;
+    DISCRIMINATOR_SIZE + PUBKEY_SIZE + PUBKEY_SIZE + PUBKEY_SIZE + U8_SIZE + U64_SIZE + U64_SIZE;
 }
 
 impl Permission for Dao {

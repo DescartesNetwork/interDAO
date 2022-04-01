@@ -11,6 +11,7 @@ pub struct InitializeProposalEvent {
   pub proposal: Pubkey,
   pub dao: Pubkey,
   pub caller: Pubkey,
+  pub quorum: ConsensusQuorum,
   pub invoked_program: Pubkey,
   pub data: Vec<u8>,
   pub accounts: Vec<InvokedAccount>,
@@ -50,6 +51,7 @@ pub fn exec(
   next_is_signers: Vec<bool>,
   next_is_writables: Vec<bool>,
   consensus_mechanism: ConsensusMechanism,
+  consensus_quorum: ConsensusQuorum,
   start_date: i64,
   end_date: i64,
 ) -> Result<()> {
@@ -95,8 +97,10 @@ pub fn exec(
   proposal.end_date = end_date;
   proposal.dao_mechanism = dao.mechanism;
   proposal.consensus_mechanism = consensus_mechanism;
+  proposal.consensus_quorum = consensus_quorum;
   proposal.executed = false;
-  proposal.voted_power = 0;
+  proposal.voting_for_power = 0;
+  proposal.voting_against_power = 0;
   proposal.supply = dao.supply;
   // Data for the inter action
   proposal.data_len = data.len().to_u64().ok_or(ErrorCode::Overflow)?;
@@ -114,6 +118,7 @@ pub fn exec(
     proposal: proposal.key(),
     dao: proposal.dao,
     caller: proposal.creator,
+    quorum: proposal.consensus_quorum,
     invoked_program: proposal.invoked_program,
     data: proposal.data.clone(),
     accounts: proposal.accounts.clone(),

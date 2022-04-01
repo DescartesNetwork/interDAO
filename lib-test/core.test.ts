@@ -13,6 +13,7 @@ import * as soproxABI from 'soprox-abi'
 
 import InterDAO, {
   ConsensusMechanisms,
+  ConsensusQuorums,
   DaoMechanisms,
   DEFAULT_INTERDAO_PROGRAM_ID,
 } from '../app'
@@ -27,8 +28,8 @@ const PRIV_KEY_FOR_TEST_ONLY = Buffer.from([
 const SUPLY = new BN(1_000_000_000)
 const TRANSFERRED_AMOUNT = new BN(1000)
 const CIRCULATED_SUPPLY = new BN(100)
-const VOTE = new BN(100)
-const VOID = new BN(10)
+const VOTE_FOR = new BN(100)
+const VOTE_AGAINST = new BN(10)
 
 describe('@project-kylan/core', function () {
   const wallet = new Wallet(web3.Keypair.fromSecretKey(PRIV_KEY_FOR_TEST_ONLY))
@@ -37,7 +38,8 @@ describe('@project-kylan/core', function () {
     splProgram: Program<SplToken>,
     daoAddress: string,
     proposalAddress: string,
-    receiptAddress: string,
+    voteForReceiptAddress: string,
+    voteAgainstReceiptAddress: string,
     tokenAddress: string,
     associatedTokenAddress: string
 
@@ -162,6 +164,7 @@ describe('@project-kylan/core', function () {
         currentTime + 30,
         currentTime + 60,
         ConsensusMechanisms.LockedTokenCounter,
+        ConsensusQuorums.Half,
       )
     proposalAddress = _proposalAddress
   })
@@ -171,14 +174,10 @@ describe('@project-kylan/core', function () {
     expect(dao.toBase58()).to.equal(daoAddress)
   })
 
-  it('vote', async () => {
+  it('vote for', async () => {
     await asyncWait(15000) // Wait for 15s
-    const { receiptAddress: _receiptAddress } = await interDAO.vote(
-      proposalAddress,
-      VOTE,
-      currentTime + 60,
-    )
-    receiptAddress = _receiptAddress
+    const { receiptAddress } = await interDAO.voteFor(proposalAddress, VOTE_FOR)
+    voteForReceiptAddress = receiptAddress
   })
 
   it('get receipt data after vote', async () => {
@@ -191,18 +190,32 @@ describe('@project-kylan/core', function () {
       proposalAddress,
       true,
     )
-    expect(receiptAddress).to.equal(expectedReceiptAddress)
-    const { amount } = await interDAO.getReceiptData(receiptAddress)
-    expect(amount.eq(VOTE)).true
+    expect(voteForReceiptAddress).to.equal(expectedReceiptAddress)
+    const { amount } = await interDAO.getReceiptData(voteForReceiptAddress)
+    expect(amount.eq(VOTE_FOR)).true
   })
 
-  it('void', async () => {
-    await interDAO.void(receiptAddress, VOID)
+  it('vote against', async () => {
+    const { receiptAddress } = await interDAO.voteAgainst(
+      proposalAddress,
+      VOTE_AGAINST,
+    )
+    voteAgainstReceiptAddress = receiptAddress
   })
 
-  it('get receipt data after void', async () => {
-    const { amount } = await interDAO.getReceiptData(receiptAddress)
-    expect(amount.eq(VOTE.sub(VOID))).true
+  it('get receipt data after vote', async () => {
+    const nextIndex = await interDAO.findAvailableReceiptIndex(
+      proposalAddress,
+      wallet.publicKey.toBase58(),
+    )
+    const expectedReceiptAddress = await interDAO.deriveReceiptAddress(
+      nextIndex.sub(new BN(1)),
+      proposalAddress,
+      true,
+    )
+    expect(voteAgainstReceiptAddress).to.equal(expectedReceiptAddress)
+    const { amount } = await interDAO.getReceiptData(voteAgainstReceiptAddress)
+    expect(amount.eq(VOTE_AGAINST)).true
   })
 
   it('execute the proposal', async () => {
@@ -219,8 +232,9 @@ describe('@project-kylan/core', function () {
     expect(executed).true
   })
 
-  it('close the receipt', async () => {
-    await interDAO.close(receiptAddress)
+  it('close all receipts', async () => {
+    await interDAO.close(voteForReceiptAddress)
+    await interDAO.close(voteAgainstReceiptAddress)
     const { amount } = await splProgram.account.token.fetch(
       associatedTokenAddress,
     )

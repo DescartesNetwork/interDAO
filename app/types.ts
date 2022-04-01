@@ -23,6 +23,13 @@ export const ConsensusMechanisms: Record<string, ConsensusMechanism> = {
   LockedTokenCounter: { lockedTokenCounter: {} },
 }
 
+export type ConsensusQuorum = IdlTypes<InterDao>['ConsensusQuorum']
+export const ConsensusQuorums: Record<string, ConsensusQuorum> = {
+  OneThird: { oneThird: {} },
+  Half: { half: {} },
+  TwoThird: { twoThird: {} },
+}
+
 export type InvokedAccount = IdlTypes<InterDao>['InvokedAccount']
 
 type TypeDefDictionary<T extends IdlEvent[], Defined> = {

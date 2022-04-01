@@ -8,7 +8,7 @@ pub struct InitializeDAOEvent {
   pub authority: Pubkey,
   pub mint: Pubkey,
   pub mechanism: DaoMechanism,
-  pub supply: u128,
+  pub supply: u64,
 }
 
 #[derive(Accounts)]
@@ -31,7 +31,7 @@ pub struct InitializeDAO<'info> {
   pub rent: Sysvar<'info, Rent>,
 }
 
-pub fn exec(ctx: Context<InitializeDAO>, dao_mechanism: DaoMechanism, supply: u128) -> Result<()> {
+pub fn exec(ctx: Context<InitializeDAO>, dao_mechanism: DaoMechanism, supply: u64) -> Result<()> {
   let dao = &mut ctx.accounts.dao;
   dao.authority = ctx.accounts.authority.key();
   dao.master = ctx.accounts.master.key();

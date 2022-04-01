@@ -21,6 +21,12 @@ export const ConsensusMechanisms = {
   StakedTokenCounter: { stakedTokenCounter: {} },
   LockedTokenCounter: { lockedTokenCounter: {} },
 }
+// Consensus quorum
+export const ConsensusQuorums = {
+  OneThird: { oneThird: {} },
+  Half: { half: {} },
+  TwoThird: { twoThird: {} },
+}
 // Dao mechanism
 export const DaoMechanisms = {
   Dictatorial: { dictatorial: {} },
@@ -41,7 +47,8 @@ describe('interDAO', () => {
   let master: web3.PublicKey
   let daoTreasury: web3.PublicKey
   let proposal: web3.PublicKey
-  let receipt: web3.PublicKey
+  let voteForReceipt: web3.PublicKey
+  let voteAgainstReceipt: web3.PublicKey
   let treasurer: web3.PublicKey
   let treasury: web3.PublicKey
   const currentTime = Math.floor(Number(new Date()) / 1000)
@@ -106,7 +113,7 @@ describe('interDAO', () => {
       mint: mint.publicKey,
       owner: treasurer,
     })
-    const [receiptPublicKey] = await web3.PublicKey.findProgramAddress(
+    const [voteForReceiptPublicKey] = await web3.PublicKey.findProgramAddress(
       [
         Buffer.from('receipt'),
         new BN(0).toBuffer('le', 8),
@@ -115,7 +122,18 @@ describe('interDAO', () => {
       ],
       program.programId,
     )
-    receipt = receiptPublicKey
+    voteForReceipt = voteForReceiptPublicKey
+    const [voteAgainstReceiptPublicKey] =
+      await web3.PublicKey.findProgramAddress(
+        [
+          Buffer.from('receipt'),
+          new BN(1).toBuffer('le', 8),
+          proposal.toBuffer(),
+          provider.wallet.publicKey.toBuffer(),
+        ],
+        program.programId,
+      )
+    voteAgainstReceipt = voteAgainstReceiptPublicKey
   })
 
   it('add listeners', async () => {
@@ -166,6 +184,7 @@ describe('interDAO', () => {
       nextIsSigners,
       nextIsWritables,
       ConsensusMechanisms.LockedTokenCounter,
+      ConsensusQuorums.Half,
       new BN(currentTime + 10),
       new BN(currentTime + 60),
       {
@@ -185,15 +204,14 @@ describe('interDAO', () => {
     console.log('2. Proposal data', accountsLen.toString(), accounts)
   })
 
-  it('vote the proposal', async () => {
+  it('vote for the proposal', async () => {
     await asyncWait(10000) // Wait for 10 seconds
 
-    const { votedPower: prevVotedPower } = await program.account.proposal.fetch(
-      proposal,
-    )
-    console.log('Prev Voted Power', prevVotedPower.toString())
+    const { votingForPower: prevVotingForPower } =
+      await program.account.proposal.fetch(proposal)
+    console.log('Prev Voting-For Power', prevVotingForPower.toString())
 
-    await program.rpc.vote(new BN(0), new BN(2), new BN(currentTime + 60), {
+    await program.rpc.voteFor(new BN(0), new BN(10), {
       accounts: {
         authority: provider.wallet.publicKey,
         src: tokenAccount,
@@ -202,7 +220,7 @@ describe('interDAO', () => {
         treasury,
         proposal,
         dao: dao.publicKey,
-        receipt,
+        receipt: voteForReceipt,
         tokenProgram: utils.token.TOKEN_PROGRAM_ID,
         associatedTokenProgram: utils.token.ASSOCIATED_PROGRAM_ID,
         systemProgram: web3.SystemProgram.programId,
@@ -210,28 +228,26 @@ describe('interDAO', () => {
       },
     })
 
-    const { votedPower: nextVotedPower } = await program.account.proposal.fetch(
-      proposal,
-    )
-    console.log('Next Voted Power', nextVotedPower.toString())
+    const { votingForPower: nextVotingForPower } =
+      await program.account.proposal.fetch(proposal)
+    console.log('Next Voting_For Power', nextVotingForPower.toString())
   })
 
-  it('void the proposal', async () => {
-    const { votedPower: prevVotedPower } = await program.account.proposal.fetch(
-      proposal,
-    )
-    console.log('Prev Voted Power', prevVotedPower.toString())
+  it('vote against the proposal', async () => {
+    const { votingAgainstPower: prevVotingAgainstPower } =
+      await program.account.proposal.fetch(proposal)
+    console.log('Prev Voting-Against Power', prevVotingAgainstPower.toString())
 
-    await program.rpc.void(new BN(1), {
+    await program.rpc.voteAgainst(new BN(1), new BN(1), {
       accounts: {
         authority: provider.wallet.publicKey,
-        dst: tokenAccount,
+        src: tokenAccount,
         treasurer,
         mint: mint.publicKey,
         treasury,
         proposal,
         dao: dao.publicKey,
-        receipt,
+        receipt: voteAgainstReceipt,
         tokenProgram: utils.token.TOKEN_PROGRAM_ID,
         associatedTokenProgram: utils.token.ASSOCIATED_PROGRAM_ID,
         systemProgram: web3.SystemProgram.programId,
@@ -239,10 +255,9 @@ describe('interDAO', () => {
       },
     })
 
-    const { votedPower: nextVotedPower } = await program.account.proposal.fetch(
-      proposal,
-    )
-    console.log('Next Voted Power', nextVotedPower.toString())
+    const { votingAgainstPower: nextVotingAgainstPower } =
+      await program.account.proposal.fetch(proposal)
+    console.log('Next Voting-Against Power', nextVotingAgainstPower.toString())
   })
 
   it('execute the proposal', async () => {
@@ -271,8 +286,8 @@ describe('interDAO', () => {
     console.log('Next Amount', nextAmount.toString())
   })
 
-  it('close the receipt', async () => {
-    const data = await program.account.receipt.fetch(receipt)
+  it('close the vote-for receipt', async () => {
+    const data = await program.account.receipt.fetch(voteForReceipt)
     console.log('Receipt Data', data)
     await program.rpc.close({
       accounts: {
@@ -283,7 +298,7 @@ describe('interDAO', () => {
         treasury,
         proposal,
         dao: dao.publicKey,
-        receipt,
+        receipt: voteForReceipt,
         tokenProgram: utils.token.TOKEN_PROGRAM_ID,
         associatedTokenProgram: utils.token.ASSOCIATED_PROGRAM_ID,
         systemProgram: web3.SystemProgram.programId,
@@ -291,7 +306,34 @@ describe('interDAO', () => {
       },
     })
     try {
-      await program.account.receipt.fetch(receipt)
+      await program.account.receipt.fetch(voteForReceipt)
+      throw new Error('The receipt account is not closed correctly')
+    } catch (er) {
+      console.log(er.message)
+    }
+  })
+
+  it('close the vote-against receipt', async () => {
+    const data = await program.account.receipt.fetch(voteAgainstReceipt)
+    console.log('Receipt Data', data)
+    await program.rpc.close({
+      accounts: {
+        authority: provider.wallet.publicKey,
+        dst: tokenAccount,
+        treasurer,
+        mint: mint.publicKey,
+        treasury,
+        proposal,
+        dao: dao.publicKey,
+        receipt: voteAgainstReceipt,
+        tokenProgram: utils.token.TOKEN_PROGRAM_ID,
+        associatedTokenProgram: utils.token.ASSOCIATED_PROGRAM_ID,
+        systemProgram: web3.SystemProgram.programId,
+        rent: web3.SYSVAR_RENT_PUBKEY,
+      },
+    })
+    try {
+      await program.account.receipt.fetch(voteAgainstReceipt)
       throw new Error('The receipt account is not closed correctly')
     } catch (er) {
       console.log(er.message)

@@ -13,13 +13,9 @@ pub trait Permission {
 /// Consensus for proposal
 ///
 pub trait Consensus {
-  fn vote(
-    &mut self,
-    amount: u64,
-    unlocked_date: i64,
-    receipt: &mut Receipt,
-  ) -> Option<(u128, u128)>;
-  fn void(&mut self, amount: u64, receipt: &mut Receipt) -> Option<(u128, u128)>;
+  fn calculate_my_power(&self, amount: u64, receipt: &mut Receipt) -> Option<u128>;
+  fn vote_for(&mut self, amount: u64, receipt: &mut Receipt) -> Option<(u128, u128)>;
+  fn vote_against(&mut self, amount: u64, receipt: &mut Receipt) -> Option<(u128, u128)>;
   fn is_consented(&self) -> bool;
 }
 

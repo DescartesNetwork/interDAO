@@ -4,7 +4,7 @@ use anchor_lang::prelude::*;
 #[event]
 pub struct UpdateSupplyEvent {
   dao: Pubkey,
-  supply: u128,
+  supply: u64,
 }
 
 #[derive(Accounts)]
@@ -15,7 +15,7 @@ pub struct UpdateSupply<'info> {
   pub dao: Account<'info, Dao>,
 }
 
-pub fn exec(ctx: Context<UpdateSupply>, supply: u128) -> Result<()> {
+pub fn exec(ctx: Context<UpdateSupply>, supply: u64) -> Result<()> {
   let dao = &mut ctx.accounts.dao;
   dao.supply = supply;
 

@@ -1,6 +1,6 @@
 {
   "name": "@interdao/core",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "main": "dist/app/index.js",
   "scripts": {
     "start": "nodemon app/index.ts",

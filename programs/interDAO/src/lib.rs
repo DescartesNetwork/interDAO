@@ -20,7 +20,7 @@ pub mod inter_dao {
   pub fn initialize_dao(
     ctx: Context<InitializeDAO>,
     dao_mechanism: DaoMechanism,
-    supply: u128,
+    supply: u64,
   ) -> Result<()> {
     initialize_dao::exec(ctx, dao_mechanism, supply)
   }
@@ -34,6 +34,7 @@ pub mod inter_dao {
     next_is_signers: Vec<bool>,
     next_is_writables: Vec<bool>,
     consensus_mechanism: ConsensusMechanism,
+    consesus_quorum: ConsensusQuorum,
     start_date: i64,
     end_date: i64,
   ) -> Result<()> {
@@ -46,17 +47,18 @@ pub mod inter_dao {
       next_is_signers,
       next_is_writables,
       consensus_mechanism,
+      consesus_quorum,
       start_date,
       end_date,
     )
   }
 
-  pub fn vote(ctx: Context<Vote>, index: u64, amount: u64, unlocked_date: i64) -> Result<()> {
-    vote::exec(ctx, index, amount, unlocked_date)
+  pub fn vote_for(ctx: Context<VoteFor>, index: u64, amount: u64) -> Result<()> {
+    vote_for::exec(ctx, index, amount)
   }
 
-  pub fn void(ctx: Context<Void>, amount: u64) -> Result<()> {
-    void::exec(ctx, amount)
+  pub fn vote_against(ctx: Context<VoteAgainst>, index: u64, amount: u64) -> Result<()> {
+    vote_against::exec(ctx, index, amount)
   }
 
   pub fn execute_proposal(ctx: Context<ExecuteProposal>) -> Result<()> {
@@ -74,7 +76,7 @@ pub mod inter_dao {
     update_dao_mechanism::exec(ctx, dao_mechanism)
   }
 
-  pub fn update_supply(ctx: Context<UpdateSupply>, supply: u128) -> Result<()> {
+  pub fn update_supply(ctx: Context<UpdateSupply>, supply: u64) -> Result<()> {
     update_supply::exec(ctx, supply)
   }
 

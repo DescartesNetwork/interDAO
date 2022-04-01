@@ -1,6 +1,21 @@
 use crate::constants::*;
 use anchor_lang::prelude::*;
 
+///
+/// Receipt action
+///
+#[repr(u8)]
+#[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, Debug, PartialEq)]
+pub enum ReceiptAction {
+  VoteFor,
+  VoteAgainst,
+}
+impl Default for ReceiptAction {
+  fn default() -> Self {
+    ReceiptAction::VoteFor
+  }
+}
+
 #[account]
 pub struct Receipt {
   pub index: u64,
@@ -10,6 +25,7 @@ pub struct Receipt {
   pub power: u128,
   pub locked_date: i64,
   pub unlocked_date: i64,
+  pub action: ReceiptAction,
 }
 
 impl Receipt {
@@ -20,5 +36,6 @@ impl Receipt {
     + U64_SIZE
     + U128_SIZE
     + I64_SIZE
-    + I64_SIZE;
+    + I64_SIZE
+    + U8_SIZE;
 }

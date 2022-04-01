@@ -4,9 +4,18 @@ use crate::traits::{Age, Consensus};
 use anchor_lang::prelude::*;
 use anchor_spl::{associated_token, token};
 
+#[event]
+pub struct VoteAgainstEvent {
+  pub authority: Pubkey,
+  pub dao: Pubkey,
+  pub proposal: Pubkey,
+  pub receipt: Pubkey,
+  pub amount: u64,
+}
+
 #[derive(Accounts)]
 #[instruction(index: u64)]
-pub struct Vote<'info> {
+pub struct VoteAgainst<'info> {
   #[account(mut)]
   pub authority: Signer<'info>,
   #[account(mut, has_one = mint)]
@@ -54,7 +63,7 @@ pub struct Vote<'info> {
   pub rent: Sysvar<'info, Rent>,
 }
 
-pub fn exec(ctx: Context<Vote>, index: u64, amount: u64, unlocked_date: i64) -> Result<()> {
+pub fn exec(ctx: Context<VoteAgainst>, index: u64, amount: u64) -> Result<()> {
   let receipt = &mut ctx.accounts.receipt;
   let proposal = &mut ctx.accounts.proposal;
   // Validate permission & consensus
@@ -83,7 +92,16 @@ pub fn exec(ctx: Context<Vote>, index: u64, amount: u64, unlocked_date: i64) -> 
   token::transfer(transfer_ctx, amount)?;
   // Count the votes
   proposal
-    .vote(amount, unlocked_date, receipt)
+    .vote_against(amount, receipt)
     .ok_or(ErrorCode::Overflow)?;
+
+  emit!(VoteAgainstEvent {
+    authority: receipt.authority,
+    dao: ctx.accounts.dao.key(),
+    proposal: receipt.proposal,
+    receipt: receipt.key(),
+    amount
+  });
+
   Ok(())
 }
