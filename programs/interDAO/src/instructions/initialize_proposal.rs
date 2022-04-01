@@ -6,6 +6,8 @@ use crate::utils::current_timestamp;
 use anchor_lang::prelude::*;
 use num_traits::ToPrimitive;
 
+const ONE_MONTH: i64 = 2592000;
+
 #[event]
 pub struct InitializeProposalEvent {
   pub proposal: Pubkey,
@@ -67,6 +69,10 @@ pub fn exec(
   }
   if end_date <= start_date
     || end_date <= current_timestamp().ok_or(ErrorCode::InvalidCurrentDate)?
+    || end_date
+      .checked_sub(start_date)
+      .ok_or(ErrorCode::InvalidEndDate)?
+      > ONE_MONTH
   {
     return err!(ErrorCode::InvalidEndDate);
   }
