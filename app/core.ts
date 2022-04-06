@@ -89,7 +89,7 @@ class InterDAO {
    * @returns Dao readable data.
    */
   parseDaoData = (data: Buffer): DaoData => {
-    return this.program.coder.accounts.decode('Dao', data)
+    return this.program.coder.accounts.decode('dao', data)
   }
 
   /**
@@ -107,7 +107,7 @@ class InterDAO {
    * @returns Proposal readable data.
    */
   parseProposalData = (data: Buffer): ProposalData => {
-    return this.program.coder.accounts.decode('Proposal', data)
+    return this.program.coder.accounts.decode('proposal', data)
   }
 
   /**
@@ -125,7 +125,7 @@ class InterDAO {
    * @returns Receipt readable data.
    */
   parseReceiptData = (data: Buffer): ReceiptData => {
-    return this.program.coder.accounts.decode('Receipt', data)
+    return this.program.coder.accounts.decode('receipt', data)
   }
 
   /**
