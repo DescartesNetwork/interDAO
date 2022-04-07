@@ -98,7 +98,7 @@ describe('interDAO', () => {
     const [proposalPublicKey] = await web3.PublicKey.findProgramAddress(
       [
         Buffer.from('proposal'),
-        new BN(0).toBuffer('le', 8),
+        new BN(0).toArrayLike(Buffer, 'le', 8), // Browser compatibility
         dao.publicKey.toBuffer(),
       ],
       program.programId,
@@ -116,7 +116,7 @@ describe('interDAO', () => {
     const [voteForReceiptPublicKey] = await web3.PublicKey.findProgramAddress(
       [
         Buffer.from('receipt'),
-        new BN(0).toBuffer('le', 8),
+        new BN(0).toArrayLike(Buffer, 'le', 8), // Browser compatibility
         proposal.toBuffer(),
         provider.wallet.publicKey.toBuffer(),
       ],
@@ -127,7 +127,7 @@ describe('interDAO', () => {
       await web3.PublicKey.findProgramAddress(
         [
           Buffer.from('receipt'),
-          new BN(1).toBuffer('le', 8),
+          new BN(1).toArrayLike(Buffer, 'le', 8), // Browser compatibility
           proposal.toBuffer(),
           provider.wallet.publicKey.toBuffer(),
         ],

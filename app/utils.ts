@@ -29,7 +29,11 @@ export const findProposal = async (
   programId: web3.PublicKey,
 ) => {
   const [proposalPublicKey] = await web3.PublicKey.findProgramAddress(
-    [Buffer.from('proposal'), index.toBuffer('le', 8), daoPublicKey.toBuffer()],
+    [
+      Buffer.from('proposal'),
+      index.toArrayLike(Buffer, 'le', 8), // Browser compatibility
+      daoPublicKey.toBuffer(),
+    ],
     programId,
   )
   return proposalPublicKey
@@ -52,7 +56,7 @@ export const findReceipt = async (
   const [receiptPublicKey] = await web3.PublicKey.findProgramAddress(
     [
       Buffer.from('receipt'),
-      index.toBuffer('le', 8),
+      index.toArrayLike(Buffer, 'le', 8), // Browser compatibility
       proposalPublicKey.toBuffer(),
       authorityPublicKey.toBuffer(),
     ],
