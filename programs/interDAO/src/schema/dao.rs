@@ -7,14 +7,14 @@ use anchor_lang::prelude::*;
 ///
 #[repr(u8)]
 #[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, Debug, PartialEq)]
-pub enum DaoMechanism {
+pub enum DaoRegime {
   Dictatorial, // Only Authority can create and approve proposals
   Democratic,  // Community can propose and Authority can approve
   Autonomous,  // Community can propose and consent on propasals (based on 51% rule)
 }
-impl Default for DaoMechanism {
+impl Default for DaoRegime {
   fn default() -> Self {
-    DaoMechanism::Dictatorial
+    DaoRegime::Dictatorial
   }
 }
 
@@ -23,7 +23,7 @@ pub struct Dao {
   pub master: Pubkey,
   pub authority: Pubkey,
   pub mint: Pubkey,
-  pub mechanism: DaoMechanism,
+  pub regime: DaoRegime,
   pub supply: u64,
   pub nonce: u64,
 }
@@ -35,17 +35,17 @@ impl Dao {
 
 impl Permission for Dao {
   fn is_authorized_to_propose(&self, caller: Pubkey) -> bool {
-    match self.mechanism {
-      DaoMechanism::Dictatorial => return self.authority == caller,
-      DaoMechanism::Democratic => return true,
-      DaoMechanism::Autonomous => return true,
+    match self.regime {
+      DaoRegime::Dictatorial => return self.authority == caller,
+      DaoRegime::Democratic => return true,
+      DaoRegime::Autonomous => return true,
     }
   }
   fn is_authorized_to_execute(&self, caller: Pubkey) -> bool {
-    match self.mechanism {
-      DaoMechanism::Dictatorial => return self.authority == caller,
-      DaoMechanism::Democratic => return self.authority == caller,
-      DaoMechanism::Autonomous => return true,
+    match self.regime {
+      DaoRegime::Dictatorial => return self.authority == caller,
+      DaoRegime::Democratic => return self.authority == caller,
+      DaoRegime::Autonomous => return true,
     }
   }
 }

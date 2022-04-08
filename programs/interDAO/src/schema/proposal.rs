@@ -1,5 +1,5 @@
 use crate::constants::*;
-use crate::schema::{dao::DaoMechanism, receipt::Receipt, receipt::ReceiptAction};
+use crate::schema::{dao::DaoRegime, receipt::Receipt, receipt::ReceiptAction};
 use crate::traits::{Age, Consensus};
 use crate::utils::current_timestamp;
 use anchor_lang::prelude::*;
@@ -47,10 +47,9 @@ impl Default for ConsensusQuorum {
 #[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, Debug, PartialEq)]
 pub struct InvokedAccount {
   pub pubkey: Pubkey,
-  pub prev_is_signer: bool,
-  pub prev_is_writable: bool,
-  pub next_is_signer: bool,
-  pub next_is_writable: bool,
+  pub is_signer: bool,
+  pub is_writable: bool,
+  pub is_master: bool,
 }
 
 #[account]
@@ -63,7 +62,7 @@ pub struct Proposal {
   pub data: Vec<u8>,
   pub accounts_len: u8,
   pub accounts: Vec<InvokedAccount>,
-  pub dao_mechanism: DaoMechanism,
+  pub regime: DaoRegime,
   pub consensus_mechanism: ConsensusMechanism,
   pub consensus_quorum: ConsensusQuorum,
   pub executed: bool,

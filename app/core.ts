@@ -13,8 +13,8 @@ import {
   ConsensusQuorum,
   ConsensusQuorums,
   DaoData,
-  DaoMechanism,
-  DaoMechanisms,
+  DaoRegime,
+  DaoRegimes,
   IdlEvents,
   InvokedAccount,
   ProposalData,
@@ -291,14 +291,14 @@ class InterDAO {
    * @param tokenAddress The token (mint) that be be accepted to vote in the DAO.
    * @param tokenSupply The total number of tokens that is fairly distributed out to the community. Circulating amount could be acceptable definition.
    * @param dao (Optional) The dao keypair. If it's not provided, a new one will be auto generated.
-   * @param daoMechanism (Optional) DAO mechanism. Default is Dictatorial.
+   * @param regime (Optional) DAO regime. Default is Dictatorial.
    * @returns { txId, daoAddress }
    */
   initializeDao = async (
     tokenAddress: string,
     tokenSupply: BN,
     dao: web3.Keypair = web3.Keypair.generate(),
-    daoMechanism: DaoMechanism = DaoMechanisms.Dictatorial,
+    regime: DaoRegime = DaoRegimes.Dictatorial,
   ) => {
     if (!isAddress(tokenAddress)) throw new Error('Invalid token address')
     if (!tokenSupply.gt(new BN(0)))
@@ -308,21 +308,17 @@ class InterDAO {
     )
     const masterPublicKey = new web3.PublicKey(masterAddress)
     const tokenPublicKey = new web3.PublicKey(tokenAddress)
-    const txId = await this.program.rpc.initializeDao(
-      daoMechanism,
-      tokenSupply,
-      {
-        accounts: {
-          dao: dao.publicKey,
-          authority: this._provider.wallet.publicKey,
-          master: masterPublicKey,
-          mint: tokenPublicKey,
-          systemProgram: web3.SystemProgram.programId,
-          rent: web3.SYSVAR_RENT_PUBKEY,
-        },
-        signers: [dao],
+    const txId = await this.program.rpc.initializeDao(regime, tokenSupply, {
+      accounts: {
+        dao: dao.publicKey,
+        authority: this._provider.wallet.publicKey,
+        master: masterPublicKey,
+        mint: tokenPublicKey,
+        systemProgram: web3.SystemProgram.programId,
+        rent: web3.SYSVAR_RENT_PUBKEY,
       },
-    )
+      signers: [dao],
+    })
     return { txId, daoAddress: dao.publicKey.toBase58() }
   }
 
@@ -331,10 +327,9 @@ class InterDAO {
    * @param daoAddress The token (mint) that be be accepted to vote in the DAO.
    * @param data The tracsaction data for the action.
    * @param pubkeys The involved account public keys for the action.
-   * @param prevIsSigners
-   * @param prevIsWritables
-   * @param nextIsSigners
-   * @param nextIsWritables
+   * @param isSigners
+   * @param isWritables
+   * @param isMasters
    * @param startDate Start voting
    * @param endDate End voting
    * @param consensusMechanism (Optional) Consensus mechanism. Default is StakedTokenCounter.
@@ -345,21 +340,22 @@ class InterDAO {
     invokedProgramAddress: string,
     data: Buffer | Uint8Array,
     pubkeys: web3.PublicKey[],
-    prevIsSigners: boolean[],
-    prevIsWritables: boolean[],
-    nextIsSigners: boolean[],
-    nextIsWritables: boolean[],
+    isSigners: boolean[],
+    isWritables: boolean[],
+    isMasters: boolean[],
     startDate: number,
     endDate: number,
+    fee: BN,
+    taxmanAddress: string,
     consensusMechanism: ConsensusMechanism = ConsensusMechanisms.StakedTokenCounter,
     consensusQuorum: ConsensusQuorum = ConsensusQuorums.Half,
   ) => {
     if (!isAddress(daoAddress)) throw new Error('Invalid DAO address')
+    if (!isAddress(taxmanAddress)) throw new Error('Invalid taxman address')
     if (
-      pubkeys.length !== prevIsSigners.length ||
-      pubkeys.length !== prevIsWritables.length ||
-      pubkeys.length !== nextIsSigners.length ||
-      pubkeys.length !== nextIsWritables.length
+      pubkeys.length !== isSigners.length ||
+      pubkeys.length !== isWritables.length ||
+      pubkeys.length !== isMasters.length
     )
       throw new Error(
         'Invalid length of pubkeys and thier flags (signer, writable)',
@@ -374,17 +370,18 @@ class InterDAO {
     const proposalPublicKey = new web3.PublicKey(proposalAddress)
     const daoPublicKey = new web3.PublicKey(daoAddress)
     const invokedProgramPublicKey = new web3.PublicKey(invokedProgramAddress)
+    const taxmanPublicKey = new web3.PublicKey(taxmanAddress)
     const txId = await this.program.rpc.initializeProposal(
       data,
       pubkeys,
-      prevIsSigners,
-      prevIsWritables,
-      nextIsSigners,
-      nextIsWritables,
+      isSigners,
+      isWritables,
+      isMasters,
       consensusMechanism,
       consensusQuorum,
       new BN(startDate),
       new BN(endDate),
+      fee,
       {
         accounts: {
           caller: this._provider.wallet.publicKey,
@@ -393,6 +390,7 @@ class InterDAO {
           invokedProgram: invokedProgramPublicKey,
           systemProgram: web3.SystemProgram.programId,
           rent: web3.SYSVAR_RENT_PUBKEY,
+          taxman: taxmanPublicKey,
         },
       },
     )
@@ -413,10 +411,10 @@ class InterDAO {
       invokedProgram,
     } = await this.getProposalData(proposalAddress)
     const remainingAccounts = (accounts as InvokedAccount[]).map(
-      ({ pubkey, prevIsSigner, prevIsWritable }) => ({
+      ({ pubkey, isSigner, isWritable, isMaster }) => ({
         pubkey,
-        isSigner: prevIsSigner,
-        isWritable: prevIsWritable,
+        isSigner: isSigner && !isMaster,
+        isWritable,
       }),
     )
 
@@ -616,17 +614,14 @@ class InterDAO {
   }
 
   /**
-   * Update DAO's mechanism
-   * @param daoMechanism The new mechanism.
+   * Update DAO's regime
+   * @param regime The new regime.
    * @param daoAddress DAO address.
    * @returns { txId }
    */
-  updateDaoMechanism = async (
-    daoMechanism: DaoMechanism,
-    daoAddress: string,
-  ) => {
+  updateDaoRegime = async (regime: DaoRegime, daoAddress: string) => {
     if (!isAddress(daoAddress)) throw new Error('Invalid DAO address')
-    const txId = await this.program.rpc.updateDaoMechanism(daoMechanism, {
+    const txId = await this.program.rpc.updateDaoRegime(regime, {
       accounts: {
         authority: this._provider.wallet.publicKey,
         dao: new web3.PublicKey(daoAddress),

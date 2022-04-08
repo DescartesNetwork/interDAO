@@ -11,45 +11,41 @@ pub use errors::*;
 pub use instructions::*;
 pub use schema::*;
 
-declare_id!("Bivu7zHQj6QP8E9nHV3Vt9tXmyqKe5hRQ5zKNoAASRhn");
+declare_id!("7BxgcaPHKcowjbjA2LjsMNNUaWB3dPFQ9Zn1nChNcm5C");
 
 #[program]
 pub mod inter_dao {
   use super::*;
 
-  pub fn initialize_dao(
-    ctx: Context<InitializeDAO>,
-    dao_mechanism: DaoMechanism,
-    supply: u64,
-  ) -> Result<()> {
-    initialize_dao::exec(ctx, dao_mechanism, supply)
+  pub fn initialize_dao(ctx: Context<InitializeDAO>, regime: DaoRegime, supply: u64) -> Result<()> {
+    initialize_dao::exec(ctx, regime, supply)
   }
 
   pub fn initialize_proposal(
     ctx: Context<InitializeProposal>,
     data: Vec<u8>,
     pubkeys: Vec<Pubkey>,
-    prev_is_signers: Vec<bool>,
-    prev_is_writables: Vec<bool>,
-    next_is_signers: Vec<bool>,
-    next_is_writables: Vec<bool>,
+    is_signers: Vec<bool>,
+    is_writables: Vec<bool>,
+    is_masters: Vec<bool>,
     consensus_mechanism: ConsensusMechanism,
     consesus_quorum: ConsensusQuorum,
     start_date: i64,
     end_date: i64,
+    fee: u64,
   ) -> Result<()> {
     initialize_proposal::exec(
       ctx,
       data,
       pubkeys,
-      prev_is_signers,
-      prev_is_writables,
-      next_is_signers,
-      next_is_writables,
+      is_signers,
+      is_writables,
+      is_masters,
       consensus_mechanism,
       consesus_quorum,
       start_date,
       end_date,
+      fee,
     )
   }
 
@@ -69,11 +65,8 @@ pub mod inter_dao {
     close::exec(ctx)
   }
 
-  pub fn update_dao_mechanism(
-    ctx: Context<UpdateDaoMechanism>,
-    dao_mechanism: DaoMechanism,
-  ) -> Result<()> {
-    update_dao_mechanism::exec(ctx, dao_mechanism)
+  pub fn update_dao_regime(ctx: Context<UpdateDaoRegime>, regime: DaoRegime) -> Result<()> {
+    update_dao_regime::exec(ctx, regime)
   }
 
   pub fn update_supply(ctx: Context<UpdateSupply>, supply: u64) -> Result<()> {

@@ -10,8 +10,8 @@ export type DaoData = IdlAccounts<InterDao>['dao']
 export type ProposalData = IdlAccounts<InterDao>['proposal']
 export type ReceiptData = IdlAccounts<InterDao>['receipt']
 
-export type DaoMechanism = IdlTypes<InterDao>['DaoMechanism']
-export const DaoMechanisms: Record<string, DaoMechanism> = {
+export type DaoRegime = IdlTypes<InterDao>['DaoRegime']
+export const DaoRegimes: Record<string, DaoRegime> = {
   Dictatorial: { dictatorial: {} },
   Democratic: { democratic: {} },
   Autonomous: { autonomous: {} },

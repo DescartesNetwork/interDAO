@@ -40,6 +40,8 @@ pub struct InitializeProposal<'info> {
   pub dao: Account<'info, Dao>,
   /// CHECK: Just a pure account
   pub invoked_program: AccountInfo<'info>,
+  /// CHECK: Just a pure account
+  pub taxman: AccountInfo<'info>,
   pub system_program: Program<'info, System>,
   pub rent: Sysvar<'info, Rent>,
 }
@@ -48,14 +50,14 @@ pub fn exec(
   ctx: Context<InitializeProposal>,
   data: Vec<u8>,
   pubkeys: Vec<Pubkey>,
-  prev_is_signers: Vec<bool>,
-  prev_is_writables: Vec<bool>,
-  next_is_signers: Vec<bool>,
-  next_is_writables: Vec<bool>,
+  is_signers: Vec<bool>,
+  is_writables: Vec<bool>,
+  is_masters: Vec<bool>,
   consensus_mechanism: ConsensusMechanism,
   consensus_quorum: ConsensusQuorum,
   start_date: i64,
   end_date: i64,
+  fee: u64,
 ) -> Result<()> {
   let dao = &mut ctx.accounts.dao;
   let proposal = &mut ctx.accounts.proposal;
@@ -76,22 +78,22 @@ pub fn exec(
   {
     return err!(ErrorCode::InvalidEndDate);
   }
-  if pubkeys.len() != prev_is_signers.len()
-    || pubkeys.len() != prev_is_writables.len()
-    || pubkeys.len() != next_is_signers.len()
-    || pubkeys.len() != next_is_writables.len()
+  if pubkeys.len() != is_signers.len()
+    || pubkeys.len() != is_writables.len()
+    || pubkeys.len() != is_masters.len()
   {
     return err!(ErrorCode::InvalidDataLength);
   }
+
+  msg!("{} {}", fee, ctx.accounts.taxman.key());
 
   let mut accounts = Vec::with_capacity(pubkeys.len());
   for i in 0..pubkeys.len() {
     accounts.push(InvokedAccount {
       pubkey: pubkeys[i],
-      prev_is_signer: prev_is_signers[i],
-      prev_is_writable: prev_is_writables[i],
-      next_is_signer: next_is_signers[i],
-      next_is_writable: next_is_writables[i],
+      is_signer: is_signers[i],
+      is_writable: is_writables[i],
+      is_master: is_masters[i],
     });
   }
 
@@ -101,7 +103,7 @@ pub fn exec(
   proposal.dao = dao.key();
   proposal.start_date = start_date;
   proposal.end_date = end_date;
-  proposal.dao_mechanism = dao.mechanism;
+  proposal.regime = dao.regime;
   proposal.consensus_mechanism = consensus_mechanism;
   proposal.consensus_quorum = consensus_quorum;
   proposal.executed = false;

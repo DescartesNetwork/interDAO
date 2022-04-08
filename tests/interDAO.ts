@@ -28,7 +28,7 @@ export const ConsensusQuorums = {
   TwoThird: { twoThird: {} },
 }
 // Dao mechanism
-export const DaoMechanisms = {
+export const DaoRegimes = {
   Dictatorial: { dictatorial: {} },
   Democratic: { democratic: {} },
   Autonomous: { autonomous: {} },
@@ -148,7 +148,7 @@ describe('interDAO', () => {
   })
 
   it('initialize a DAO', async () => {
-    await program.rpc.initializeDao(DaoMechanisms.Autonomous, new BN(1), {
+    await program.rpc.initializeDao(DaoRegimes.Autonomous, new BN(1), {
       accounts: {
         dao: dao.publicKey,
         authority: provider.wallet.publicKey,
@@ -172,21 +172,20 @@ describe('interDAO', () => {
       { code: 3, amount: 1000n },
     )
     const pubkeys = [daoTreasury, tokenAccount, master]
-    const prevIsSigners = [false, false, false]
-    const prevIsWritables = [true, true, true]
-    const nextIsSigners = [false, false, true]
-    const nextIsWritables = [true, true, true]
+    const isSigners = [false, false, true]
+    const isWritables = [true, true, true]
+    const isMasters = [false, false, true]
     await program.rpc.initializeProposal(
       buf.toBuffer(),
       pubkeys,
-      prevIsSigners,
-      prevIsWritables,
-      nextIsSigners,
-      nextIsWritables,
+      isSigners,
+      isWritables,
+      isMasters,
       ConsensusMechanisms.LockedTokenCounter,
       ConsensusQuorums.Half,
       new BN(currentTime + 10),
       new BN(currentTime + 60),
+      new BN(10 ** 6), // fee
       {
         accounts: {
           caller: provider.wallet.publicKey,
@@ -195,6 +194,7 @@ describe('interDAO', () => {
           invokedProgram: utils.token.TOKEN_PROGRAM_ID,
           systemProgram: web3.SystemProgram.programId,
           rent: web3.SYSVAR_RENT_PUBKEY,
+          taxman: provider.wallet.publicKey,
         },
       },
     )
@@ -340,16 +340,18 @@ describe('interDAO', () => {
     }
   })
 
-  it('update dao mechanism', async () => {
-    const daoMechanism = DaoMechanisms.Democratic
-    await program.rpc.updateDaoMechanism(daoMechanism, {
+  it('update dao regime', async () => {
+    const regime = DaoRegimes.Democratic
+    await program.rpc.updateDaoRegime(regime, {
       accounts: {
         authority: provider.wallet.publicKey,
         dao: dao.publicKey,
       },
     })
-    const { mechanism } = await program.account.dao.fetch(dao.publicKey)
-    expect(mechanism).to.deep.equal(daoMechanism)
+    const { regime: updatedRegime } = await program.account.dao.fetch(
+      dao.publicKey,
+    )
+    expect(updatedRegime).to.deep.equal(regime)
   })
 
   it('update total power', async () => {

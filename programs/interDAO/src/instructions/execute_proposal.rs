@@ -63,8 +63,8 @@ pub fn exec(ctx: Context<ExecuteProposal>) -> Result<()> {
   }
   for (i, acc) in proposal.accounts.iter().enumerate() {
     if acc.pubkey != ctx.remaining_accounts[i].key()
-      || acc.prev_is_signer != ctx.remaining_accounts[i].is_signer
-      || acc.prev_is_writable != ctx.remaining_accounts[i].is_writable
+      || (acc.is_signer && !acc.is_master) != ctx.remaining_accounts[i].is_signer
+      || acc.is_writable != ctx.remaining_accounts[i].is_writable
     {
       return err!(ErrorCode::InconsistentProposal);
     }
@@ -73,10 +73,10 @@ pub fn exec(ctx: Context<ExecuteProposal>) -> Result<()> {
   let data = proposal.data.clone();
   let mut accounts = Vec::with_capacity(proposal.accounts_len as usize);
   for acc in proposal.accounts.iter() {
-    accounts.push(if acc.next_is_writable {
-      AccountMeta::new(acc.pubkey, acc.next_is_signer)
+    accounts.push(if acc.is_writable {
+      AccountMeta::new(acc.pubkey, acc.is_signer)
     } else {
-      AccountMeta::new_readonly(acc.pubkey, acc.next_is_signer)
+      AccountMeta::new_readonly(acc.pubkey, acc.is_signer)
     })
   }
   let ix = Instruction {

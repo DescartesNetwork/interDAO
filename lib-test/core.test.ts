@@ -14,7 +14,7 @@ import * as soproxABI from 'soprox-abi'
 import InterDAO, {
   ConsensusMechanisms,
   ConsensusQuorums,
-  DaoMechanisms,
+  DaoRegimes,
   DEFAULT_INTERDAO_PROGRAM_ID,
 } from '../app'
 import { asyncWait, initializeAccount, initializeMint } from './pretest'
@@ -146,10 +146,9 @@ describe('@project-kylan/core', function () {
       new web3.PublicKey(associatedTokenAddress),
       new web3.PublicKey(masterAddress),
     ]
-    const prevIsSigners = [false, false, false]
-    const prevIsWritables = [true, true, true]
-    const nextIsSigners = [false, false, true]
-    const nextIsWritables = [true, true, true]
+    const isSigners = [false, false, true]
+    const isWritables = [true, true, true]
+    const isMasters = [false, false, true]
     // Init
     const { proposalAddress: _proposalAddress } =
       await interDAO.initializeProposal(
@@ -157,12 +156,13 @@ describe('@project-kylan/core', function () {
         utils.token.TOKEN_PROGRAM_ID.toBase58(),
         buf.toBuffer(),
         pubkeys,
-        prevIsSigners,
-        prevIsWritables,
-        nextIsSigners,
-        nextIsWritables,
+        isSigners,
+        isWritables,
+        isMasters,
         currentTime + 30,
         currentTime + 60,
+        new BN(10 ** 6),
+        wallet.publicKey.toBase58(),
         ConsensusMechanisms.LockedTokenCounter,
         ConsensusQuorums.Half,
       )
@@ -241,10 +241,10 @@ describe('@project-kylan/core', function () {
     expect(SUPLY.add(TRANSFERRED_AMOUNT).eq(amount)).true
   })
 
-  it('update dao mechanism', async () => {
-    await interDAO.updateDaoMechanism(DaoMechanisms.Autonomous, daoAddress)
-    const { mechanism } = await interDAO.getDaoData(daoAddress)
-    expect(mechanism).to.deep.equal(DaoMechanisms.Autonomous)
+  it('update dao regime', async () => {
+    await interDAO.updateDaoRegime(DaoRegimes.Autonomous, daoAddress)
+    const { regime } = await interDAO.getDaoData(daoAddress)
+    expect(regime).to.deep.equal(DaoRegimes.Autonomous)
   })
 
   it('update dao supply', async () => {
