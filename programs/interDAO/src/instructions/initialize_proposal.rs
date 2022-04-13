@@ -3,7 +3,7 @@ use crate::errors::ErrorCode;
 use crate::schema::{dao::*, proposal::*};
 use crate::traits::Permission;
 use crate::utils::current_timestamp;
-use anchor_lang::prelude::*;
+use anchor_lang::{prelude::*, system_program};
 use num_traits::ToPrimitive;
 
 const ONE_MONTH: i64 = 2592000;
@@ -40,6 +40,7 @@ pub struct InitializeProposal<'info> {
   pub dao: Account<'info, Dao>,
   /// CHECK: Just a pure account
   pub invoked_program: AccountInfo<'info>,
+  #[account(mut)]
   /// CHECK: Just a pure account
   pub taxman: AccountInfo<'info>,
   pub system_program: Program<'info, System>,
@@ -85,7 +86,15 @@ pub fn exec(
     return err!(ErrorCode::InvalidDataLength);
   }
 
-  msg!("{} {}", fee, ctx.accounts.taxman.key());
+  // Charge protocol fee
+  let fee_ctx = CpiContext::new(
+    ctx.accounts.system_program.to_account_info(),
+    system_program::Transfer {
+      from: ctx.accounts.caller.to_account_info(),
+      to: ctx.accounts.taxman.to_account_info(),
+    },
+  );
+  system_program::transfer(fee_ctx, fee)?;
 
   let mut accounts = Vec::with_capacity(pubkeys.len());
   for i in 0..pubkeys.len() {
