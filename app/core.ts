@@ -1,3 +1,5 @@
+// @ts-ignore
+import * as soproxABI from 'soprox-abi'
 import { web3, Program, Provider, utils, BN } from '@project-serum/anchor'
 import { InterDao } from '../target/types/inter_dao'
 
@@ -81,6 +83,28 @@ class InterDAO {
     } catch (er: any) {
       console.warn(er)
     }
+  }
+
+  /**
+   * Get current Unix Timestamp of Solana Cluster
+   * @param getCurrentUnixTimestamp
+   * @returns Number (in seconds)
+   */
+  getCurrentUnixTimestamp = async (): Promise<number> => {
+    const { data: buf } =
+      (await this.program.provider.connection.getAccountInfo(
+        web3.SYSVAR_CLOCK_PUBKEY,
+      )) || {}
+    const layout = new soproxABI.struct([
+      { key: 'slot', type: 'u64' },
+      { key: 'epoch_start_timestamp', type: 'i64' },
+      { key: 'epoch', type: 'u64' },
+      { key: 'leader_schedule_epoch', type: 'u64' },
+      { key: 'unix_timestamp', type: 'i64' },
+    ])
+    layout.fromBuffer(buf)
+    const { unix_timestamp } = layout.value
+    return Number(unix_timestamp)
   }
 
   /**
@@ -297,28 +321,35 @@ class InterDAO {
   initializeDao = async (
     tokenAddress: string,
     tokenSupply: BN,
+    metadata: Buffer | Uint8Array,
     dao: web3.Keypair = web3.Keypair.generate(),
     regime: DaoRegime = DaoRegimes.Dictatorial,
   ) => {
     if (!isAddress(tokenAddress)) throw new Error('Invalid token address')
     if (!tokenSupply.gt(new BN(0)))
       throw new Error('Invalid token supply must be greater than zero')
+    if (metadata.length !== 32) throw new Error('Invalid metadata path')
     const masterAddress = await this.deriveMasterAddress(
       dao.publicKey.toBase58(),
     )
     const masterPublicKey = new web3.PublicKey(masterAddress)
     const tokenPublicKey = new web3.PublicKey(tokenAddress)
-    const txId = await this.program.rpc.initializeDao(regime, tokenSupply, {
-      accounts: {
-        dao: dao.publicKey,
-        authority: this._provider.wallet.publicKey,
-        master: masterPublicKey,
-        mint: tokenPublicKey,
-        systemProgram: web3.SystemProgram.programId,
-        rent: web3.SYSVAR_RENT_PUBKEY,
+    const txId = await this.program.rpc.initializeDao(
+      regime,
+      tokenSupply,
+      metadata,
+      {
+        accounts: {
+          dao: dao.publicKey,
+          authority: this._provider.wallet.publicKey,
+          master: masterPublicKey,
+          mint: tokenPublicKey,
+          systemProgram: web3.SystemProgram.programId,
+          rent: web3.SYSVAR_RENT_PUBKEY,
+        },
+        signers: [dao],
       },
-      signers: [dao],
-    })
+    )
     return { txId, daoAddress: dao.publicKey.toBase58() }
   }
 
@@ -347,20 +378,22 @@ class InterDAO {
     endDate: number,
     fee: BN,
     taxmanAddress: string,
+    metadata: Buffer | Uint8Array,
     consensusMechanism: ConsensusMechanism = ConsensusMechanisms.StakedTokenCounter,
     consensusQuorum: ConsensusQuorum = ConsensusQuorums.Half,
   ) => {
     if (!isAddress(daoAddress)) throw new Error('Invalid DAO address')
     if (!isAddress(taxmanAddress)) throw new Error('Invalid taxman address')
+    if (metadata.length !== 32) throw new Error('Invalid metadata path')
     if (
       pubkeys.length !== isSigners.length ||
       pubkeys.length !== isWritables.length ||
       pubkeys.length !== isMasters.length
     )
       throw new Error(
-        'Invalid length of pubkeys and thier flags (signer, writable)',
+        'Invalid length of pubkeys and thier flags (isSigner, isWritable, isMaster)',
       )
-    const currentTime = Math.ceil(Number(new Date()) / 1000)
+    const currentTime = await this.getCurrentUnixTimestamp()
     if (startDate <= currentTime) throw new Error('Invalid start date')
     if (endDate <= startDate) throw new Error('Invalid end date')
 
@@ -382,6 +415,7 @@ class InterDAO {
       new BN(startDate),
       new BN(endDate),
       fee,
+      metadata,
       {
         accounts: {
           caller: this._provider.wallet.publicKey,
@@ -559,7 +593,9 @@ class InterDAO {
       receiptAddress,
     )
     const proposalAddress = proposalPublicKey.toBase58()
-    const { dao: daoPublicKey } = await this.getProposalData(proposalAddress)
+    const { dao: daoPublicKey, endDate } = await this.getProposalData(
+      proposalAddress,
+    )
     const { mint: mintPublicKey } = await this.getDaoData(
       daoPublicKey.toBase58(),
     )
@@ -575,6 +611,10 @@ class InterDAO {
       mint: mintPublicKey,
       owner: treasurerPublicKey,
     })
+
+    const currentTime = await this.getCurrentUnixTimestamp()
+    if (currentTime <= endDate.toNumber())
+      throw new Error('The proposal is not ended yet')
 
     const txId = await this.program.rpc.close({
       accounts: {

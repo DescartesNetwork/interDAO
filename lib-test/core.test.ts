@@ -30,6 +30,10 @@ const TRANSFERRED_AMOUNT = new BN(1000)
 const CIRCULATED_SUPPLY = new BN(100)
 const VOTE_FOR = new BN(100)
 const VOTE_AGAINST = new BN(10)
+const DUMMY_METADATA = Buffer.from(
+  'b2b68b298b9bfa2dd2931cd879e5c9997837209476d25319514b46f7b7911d31',
+  'hex',
+)
 
 describe('@project-kylan/core', function () {
   const wallet = new Wallet(web3.Keypair.fromSecretKey(PRIV_KEY_FOR_TEST_ONLY))
@@ -41,9 +45,8 @@ describe('@project-kylan/core', function () {
     voteForReceiptAddress: string,
     voteAgainstReceiptAddress: string,
     tokenAddress: string,
-    associatedTokenAddress: string
-
-  const currentTime = Math.floor(Number(new Date()) / 1000)
+    associatedTokenAddress: string,
+    currentTime: number
 
   before(async () => {
     const {
@@ -86,12 +89,15 @@ describe('@project-kylan/core', function () {
     const lamports = await connection.getBalance(wallet.publicKey)
     if (lamports < 10 * web3.LAMPORTS_PER_SOL)
       await connection.requestAirdrop(wallet.publicKey, web3.LAMPORTS_PER_SOL)
+    // Current Unix Timestamp
+    currentTime = await interDAO.getCurrentUnixTimestamp()
   })
 
   it('initialize a dao', async () => {
     const { daoAddress: _daoAddress } = await interDAO.initializeDao(
       tokenAddress,
       CIRCULATED_SUPPLY,
+      DUMMY_METADATA,
     )
     daoAddress = _daoAddress
   })
@@ -163,6 +169,7 @@ describe('@project-kylan/core', function () {
         currentTime + 60,
         new BN(10 ** 6),
         wallet.publicKey.toBase58(),
+        DUMMY_METADATA,
         ConsensusMechanisms.LockedTokenCounter,
         ConsensusQuorums.Half,
       )

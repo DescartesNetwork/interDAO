@@ -13,6 +13,11 @@ import { initializeAccount, initializeMint } from './pretest'
 import * as soproxABI from 'soprox-abi'
 import { expect } from 'chai'
 
+const DUMMY_METADATA = Buffer.from(
+  'b2b68b298b9bfa2dd2931cd879e5c9997837209476d25319514b46f7b7911d31',
+  'hex',
+)
+
 export const asyncWait = (ms: number) =>
   new Promise((resolve) => setTimeout(resolve, ms))
 
@@ -148,17 +153,22 @@ describe('interDAO', () => {
   })
 
   it('initialize a DAO', async () => {
-    await program.rpc.initializeDao(DaoRegimes.Autonomous, new BN(1), {
-      accounts: {
-        dao: dao.publicKey,
-        authority: provider.wallet.publicKey,
-        master,
-        mint: mint.publicKey,
-        systemProgram: web3.SystemProgram.programId,
-        rent: web3.SYSVAR_RENT_PUBKEY,
+    await program.rpc.initializeDao(
+      DaoRegimes.Autonomous,
+      new BN(1),
+      DUMMY_METADATA,
+      {
+        accounts: {
+          dao: dao.publicKey,
+          authority: provider.wallet.publicKey,
+          master,
+          mint: mint.publicKey,
+          systemProgram: web3.SystemProgram.programId,
+          rent: web3.SYSVAR_RENT_PUBKEY,
+        },
+        signers: [dao],
       },
-      signers: [dao],
-    })
+    )
     const data = await program.account.dao.fetch(dao.publicKey)
     console.log('DAO data', data)
   })
@@ -186,6 +196,7 @@ describe('interDAO', () => {
       new BN(currentTime + 10),
       new BN(currentTime + 60),
       new BN(10 ** 6), // fee
+      DUMMY_METADATA,
       {
         accounts: {
           caller: provider.wallet.publicKey,

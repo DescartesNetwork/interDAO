@@ -32,7 +32,7 @@ pub struct Close<'info> {
     associated_token::mint = mint,
     associated_token::authority = treasurer
   )]
-  pub treasury: Account<'info, token::TokenAccount>,
+  pub treasury: Box<Account<'info, token::TokenAccount>>,
   #[account(
     mut,
     seeds = [

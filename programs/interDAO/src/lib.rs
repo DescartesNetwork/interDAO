@@ -11,14 +11,19 @@ pub use errors::*;
 pub use instructions::*;
 pub use schema::*;
 
-declare_id!("7BxgcaPHKcowjbjA2LjsMNNUaWB3dPFQ9Zn1nChNcm5C");
+declare_id!("FBaHKV32ugTPy31SVrZuqDnZ6nTWepwkdSWUUY1r851q");
 
 #[program]
 pub mod inter_dao {
   use super::*;
 
-  pub fn initialize_dao(ctx: Context<InitializeDAO>, regime: DaoRegime, supply: u64) -> Result<()> {
-    initialize_dao::exec(ctx, regime, supply)
+  pub fn initialize_dao(
+    ctx: Context<InitializeDAO>,
+    regime: DaoRegime,
+    supply: u64,
+    metadata: [u8; 32],
+  ) -> Result<()> {
+    initialize_dao::exec(ctx, regime, supply, metadata)
   }
 
   pub fn initialize_proposal(
@@ -33,6 +38,7 @@ pub mod inter_dao {
     start_date: i64,
     end_date: i64,
     fee: u64,
+    metadata: [u8; 32],
   ) -> Result<()> {
     initialize_proposal::exec(
       ctx,
@@ -46,6 +52,7 @@ pub mod inter_dao {
       start_date,
       end_date,
       fee,
+      metadata,
     )
   }
 

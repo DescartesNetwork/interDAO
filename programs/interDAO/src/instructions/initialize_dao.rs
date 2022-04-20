@@ -31,7 +31,12 @@ pub struct InitializeDAO<'info> {
   pub rent: Sysvar<'info, Rent>,
 }
 
-pub fn exec(ctx: Context<InitializeDAO>, regime: DaoRegime, supply: u64) -> Result<()> {
+pub fn exec(
+  ctx: Context<InitializeDAO>,
+  regime: DaoRegime,
+  supply: u64,
+  metadata: [u8; 32],
+) -> Result<()> {
   let dao = &mut ctx.accounts.dao;
   dao.authority = ctx.accounts.authority.key();
   dao.master = ctx.accounts.master.key();
@@ -39,6 +44,7 @@ pub fn exec(ctx: Context<InitializeDAO>, regime: DaoRegime, supply: u64) -> Resu
   dao.regime = regime;
   dao.supply = supply;
   dao.nonce = 0;
+  dao.metadata = metadata;
 
   emit!(InitializeDAOEvent {
     dao: dao.key(),

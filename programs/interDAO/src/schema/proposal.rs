@@ -71,6 +71,7 @@ pub struct Proposal {
   pub supply: u64,
   pub start_date: i64,
   pub end_date: i64,
+  pub metadata: [u8; 32],
 }
 
 impl Proposal {
@@ -89,7 +90,8 @@ impl Proposal {
     + U128_SIZE
     + U64_SIZE
     + I64_SIZE
-    + I64_SIZE; // And a variant data len and accounts len
+    + I64_SIZE
+    + U8_SIZE * 32; // And a variant data len and accounts len
 
   pub fn total_power(&self) -> Option<u128> {
     let total_power = match self.consensus_mechanism {

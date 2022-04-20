@@ -26,11 +26,18 @@ pub struct Dao {
   pub regime: DaoRegime,
   pub supply: u64,
   pub nonce: u64,
+  pub metadata: [u8; 32],
 }
 
 impl Dao {
-  pub const LEN: usize =
-    DISCRIMINATOR_SIZE + PUBKEY_SIZE + PUBKEY_SIZE + PUBKEY_SIZE + U8_SIZE + U64_SIZE + U64_SIZE;
+  pub const LEN: usize = DISCRIMINATOR_SIZE
+    + PUBKEY_SIZE
+    + PUBKEY_SIZE
+    + PUBKEY_SIZE
+    + U8_SIZE
+    + U64_SIZE
+    + U64_SIZE
+    + U8_SIZE * 32;
 }
 
 impl Permission for Dao {

@@ -59,6 +59,7 @@ pub fn exec(
   start_date: i64,
   end_date: i64,
   fee: u64,
+  metadata: [u8; 32],
 ) -> Result<()> {
   let dao = &mut ctx.accounts.dao;
   let proposal = &mut ctx.accounts.proposal;
@@ -108,6 +109,7 @@ pub fn exec(
 
   // Create proposal data
   proposal.index = dao.nonce;
+  proposal.metadata = metadata;
   proposal.creator = ctx.accounts.caller.key();
   proposal.dao = dao.key();
   proposal.start_date = start_date;
