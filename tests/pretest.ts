@@ -1,15 +1,15 @@
-import { Provider, web3, Spl, utils } from '@project-serum/anchor'
+import { web3, Spl, utils, AnchorProvider } from '@project-serum/anchor'
 
 const splProgram = Spl.token()
 
 export const initializeMint = async (
   decimals: number,
   token: web3.Keypair,
-  provider: Provider,
+  provider: AnchorProvider,
 ) => {
   const ix = await (splProgram.account as any).mint.createInstruction(token)
   const tx = new web3.Transaction().add(ix)
-  await provider.send(tx, [token])
+  await provider.sendAndConfirm(tx, [token])
   return await splProgram.rpc.initializeMint(
     decimals,
     provider.wallet.publicKey,
@@ -28,7 +28,7 @@ export const initializeAccount = async (
   associatedTokenAccount: web3.PublicKey,
   token: web3.PublicKey,
   authority: web3.PublicKey,
-  provider: Provider,
+  provider: AnchorProvider,
 ) => {
   const ix = new web3.TransactionInstruction({
     keys: [
@@ -72,5 +72,5 @@ export const initializeAccount = async (
     data: Buffer.from([]),
   })
   const tx = new web3.Transaction().add(ix)
-  return await provider.send(tx)
+  return await provider.sendAndConfirm(tx)
 }

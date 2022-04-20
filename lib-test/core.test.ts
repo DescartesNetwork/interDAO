@@ -1,4 +1,5 @@
 import {
+  AnchorProvider,
   BN,
   Program,
   SplToken,
@@ -6,7 +7,7 @@ import {
   Wallet,
   web3,
 } from '@project-serum/anchor'
-import { program } from '@project-serum/anchor/dist/cjs/spl/token'
+import { program as getSplProgram } from '@project-serum/anchor/dist/cjs/spl/token'
 import { expect } from 'chai'
 // @ts-ignore
 import * as soproxABI from 'soprox-abi'
@@ -49,17 +50,16 @@ describe('@project-kylan/core', function () {
     currentTime: number
 
   before(async () => {
-    const {
-      program: { provider },
-    } = new InterDAO(wallet)
-    splProgram = program(provider)
+    const { program } = new InterDAO(wallet)
+    const provider = program.provider as AnchorProvider
+    splProgram = getSplProgram(provider)
     // Init a token
     const token = web3.Keypair.generate()
     tokenAddress = token.publicKey.toBase58()
     await initializeMint(6, token, splProgram)
     associatedTokenAddress = (
       await utils.token.associatedAddress({
-        owner: provider.wallet.publicKey,
+        owner: wallet.publicKey,
         mint: new web3.PublicKey(tokenAddress),
       })
     ).toBase58()
@@ -67,14 +67,14 @@ describe('@project-kylan/core', function () {
     await initializeAccount(
       associatedTokenAddress,
       tokenAddress,
-      provider.wallet.publicKey,
+      wallet.publicKey,
       provider,
     )
     await splProgram.rpc.mintTo(SUPLY, {
       accounts: {
         mint: new web3.PublicKey(tokenAddress),
         to: new web3.PublicKey(associatedTokenAddress),
-        authority: splProgram.provider.wallet.publicKey,
+        authority: wallet.publicKey,
       },
     })
   })
@@ -113,13 +113,13 @@ describe('@project-kylan/core', function () {
       vaultPublicKey.toBase58(),
       tokenAddress,
       masterPublicKey,
-      interDAO.program.provider,
+      interDAO.program.provider as AnchorProvider,
     )
     await splProgram.rpc.mintTo(SUPLY, {
       accounts: {
         mint: new web3.PublicKey(tokenAddress),
         to: vaultPublicKey,
-        authority: interDAO.program.provider.wallet.publicKey,
+        authority: wallet.publicKey,
       },
     })
     const { amount } = (await splProgram.account.token.fetch(

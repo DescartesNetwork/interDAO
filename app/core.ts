@@ -1,6 +1,6 @@
 // @ts-ignore
 import * as soproxABI from 'soprox-abi'
-import { web3, Program, Provider, utils, BN } from '@project-serum/anchor'
+import { web3, Program, utils, BN, AnchorProvider } from '@project-serum/anchor'
 import { InterDao } from '../target/types/inter_dao'
 
 import {
@@ -26,7 +26,7 @@ import { findProposal, findReceipt, isAddress } from './utils'
 
 class InterDAO {
   private _connection: web3.Connection
-  private _provider: Provider
+  private _provider: AnchorProvider
   readonly program: Program<InterDao>
 
   constructor(
@@ -37,7 +37,7 @@ class InterDAO {
     if (!isAddress(programId)) throw new Error('Invalid program id')
     // Private
     this._connection = new web3.Connection(rpcEndpoint, 'confirmed')
-    this._provider = new Provider(this._connection, wallet, {
+    this._provider = new AnchorProvider(this._connection, wallet, {
       skipPreflight: true,
       commitment: 'confirmed',
     })

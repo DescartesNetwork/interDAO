@@ -1,11 +1,11 @@
 import {
   web3,
-  Provider,
   setProvider,
   workspace,
   utils,
   Spl,
   BN,
+  AnchorProvider,
 } from '@project-serum/anchor'
 import { Program } from '@project-serum/anchor'
 import { InterDao } from '../target/types/inter_dao'
@@ -41,7 +41,7 @@ export const DaoRegimes = {
 
 describe('interDAO', () => {
   // Configure the client to use the local cluster.
-  const provider = Provider.env()
+  const provider = AnchorProvider.local()
   setProvider(provider)
 
   const program = workspace.InterDao as Program<InterDao>

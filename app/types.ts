@@ -1,7 +1,6 @@
-import { IdlAccounts, IdlTypes, Idl } from '@project-serum/anchor'
+import { IdlAccounts, IdlTypes, Idl, Wallet } from '@project-serum/anchor'
 import { IdlEvent } from '@project-serum/anchor/dist/cjs/idl'
 import { TypeDef } from '@project-serum/anchor/dist/cjs/program/namespace/types'
-import { Wallet } from '@project-serum/anchor/dist/cjs/provider'
 import { InterDao } from '../target/types/inter_dao'
 
 export type AnchorWallet = Wallet
