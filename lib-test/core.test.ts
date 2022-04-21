@@ -31,8 +31,12 @@ const TRANSFERRED_AMOUNT = new BN(1000)
 const CIRCULATED_SUPPLY = new BN(100)
 const VOTE_FOR = new BN(100)
 const VOTE_AGAINST = new BN(10)
-const DUMMY_METADATA = Buffer.from(
+const PRIMARY_DUMMY_METADATA = Buffer.from(
   'b2b68b298b9bfa2dd2931cd879e5c9997837209476d25319514b46f7b7911d31',
+  'hex',
+)
+const SECONDARY_DUMMY_METADATA = Buffer.from(
+  'b2b68b298b9bfa2dd2931cd879e5c9997837209476d25319514b46f7b7911d32',
   'hex',
 )
 
@@ -97,7 +101,7 @@ describe('@project-kylan/core', function () {
     const { daoAddress: _daoAddress } = await interDAO.initializeDao(
       tokenAddress,
       CIRCULATED_SUPPLY,
-      DUMMY_METADATA,
+      PRIMARY_DUMMY_METADATA,
     )
     daoAddress = _daoAddress
   })
@@ -169,8 +173,8 @@ describe('@project-kylan/core', function () {
         currentTime + 60,
         new BN(10 ** 6),
         wallet.publicKey.toBase58(),
-        DUMMY_METADATA,
-        ConsensusMechanisms.LockedTokenCounter,
+        PRIMARY_DUMMY_METADATA,
+        ConsensusMechanisms.StakedTokenCounter,
         ConsensusQuorums.Half,
       )
     proposalAddress = _proposalAddress
@@ -259,6 +263,12 @@ describe('@project-kylan/core', function () {
     await interDAO.updateDaoSupply(newSupply, daoAddress)
     const { supply } = await interDAO.getDaoData(daoAddress)
     expect(supply.eq(newSupply)).true
+  })
+
+  it('update DAO metadata', async () => {
+    await interDAO.updateDaoMetadata(SECONDARY_DUMMY_METADATA, daoAddress)
+    const { metadata } = await interDAO.getDaoData(daoAddress)
+    expect(metadata).deep.equal(SECONDARY_DUMMY_METADATA.toJSON().data)
   })
 
   it('transfer authority', async () => {

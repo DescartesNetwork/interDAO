@@ -76,6 +76,10 @@ pub mod inter_dao {
     update_dao_regime::exec(ctx, regime)
   }
 
+  pub fn update_dao_metadata(ctx: Context<UpdateDaoMetadata>, metadata: [u8; 32]) -> Result<()> {
+    update_dao_metadata::exec(ctx, metadata)
+  }
+
   pub fn update_supply(ctx: Context<UpdateSupply>, supply: u64) -> Result<()> {
     update_supply::exec(ctx, supply)
   }

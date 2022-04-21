@@ -13,10 +13,14 @@ import { initializeAccount, initializeMint } from './pretest'
 import * as soproxABI from 'soprox-abi'
 import { expect } from 'chai'
 
-const DUMMY_METADATA = Buffer.from(
+const { data: PRIMARY_DUMMY_METADATA } = Buffer.from(
   'b2b68b298b9bfa2dd2931cd879e5c9997837209476d25319514b46f7b7911d31',
   'hex',
-)
+).toJSON()
+const { data: SECONDARY_DUMMY_METADATA } = Buffer.from(
+  'c2b68b298b9bfa2dd2931cd879e5c9997837209476d25319514b46f7b7911d31',
+  'hex',
+).toJSON()
 
 export const asyncWait = (ms: number) =>
   new Promise((resolve) => setTimeout(resolve, ms))
@@ -156,7 +160,7 @@ describe('interDAO', () => {
     await program.rpc.initializeDao(
       DaoRegimes.Autonomous,
       new BN(1),
-      DUMMY_METADATA,
+      PRIMARY_DUMMY_METADATA,
       {
         accounts: {
           dao: dao.publicKey,
@@ -196,7 +200,7 @@ describe('interDAO', () => {
       new BN(currentTime + 10),
       new BN(currentTime + 60),
       new BN(10 ** 6), // fee
-      DUMMY_METADATA,
+      PRIMARY_DUMMY_METADATA,
       {
         accounts: {
           caller: provider.wallet.publicKey,
@@ -375,6 +379,17 @@ describe('interDAO', () => {
     })
     const { supply } = await program.account.dao.fetch(dao.publicKey)
     expect(supply.eq(newSupply)).true
+  })
+
+  it('update DAO metadata', async () => {
+    await program.rpc.updateDaoMetadata(SECONDARY_DUMMY_METADATA, {
+      accounts: {
+        authority: provider.wallet.publicKey,
+        dao: dao.publicKey,
+      },
+    })
+    const { metadata } = await program.account.dao.fetch(dao.publicKey)
+    expect(metadata).deep.equal(SECONDARY_DUMMY_METADATA)
   })
 
   it('transfer authority', async () => {

@@ -671,6 +671,30 @@ class InterDAO {
   }
 
   /**
+   * Update DAO's metadata
+   * @param metadata The new metadata.
+   * @param daoAddress DAO address.
+   * @returns { txId }
+   */
+  updateDaoMetadata = async (
+    metadata: Buffer | Uint8Array | number[],
+    daoAddress: string,
+  ) => {
+    if (!isAddress(daoAddress)) throw new Error('Invalid DAO address')
+    if (metadata.length !== 32) throw new Error('Invalid metadata path')
+    const txId = await this.program.rpc.updateDaoMetadata(
+      metadata as number[],
+      {
+        accounts: {
+          authority: this._provider.wallet.publicKey,
+          dao: new web3.PublicKey(daoAddress),
+        },
+      },
+    )
+    return { txId }
+  }
+
+  /**
    * Transfer the DAO authority
    * @param newAuthority The new taxman authority (the function will auto derive the taxman account for the authority).
    * @param daoAddress DAO address.

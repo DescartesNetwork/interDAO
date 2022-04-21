@@ -6,7 +6,8 @@ use crate::utils::current_timestamp;
 use anchor_lang::{prelude::*, system_program};
 use num_traits::ToPrimitive;
 
-const ONE_MONTH: i64 = 2592000;
+const ONE_DAY: i64 = 1; // 86400
+const ONE_QUATER: i64 = 7776000;
 
 #[event]
 pub struct InitializeProposalEvent {
@@ -76,7 +77,11 @@ pub fn exec(
     || end_date
       .checked_sub(start_date)
       .ok_or(ErrorCode::InvalidEndDate)?
-      > ONE_MONTH
+      < ONE_DAY
+    || end_date
+      .checked_sub(start_date)
+      .ok_or(ErrorCode::InvalidEndDate)?
+      > ONE_QUATER
   {
     return err!(ErrorCode::InvalidEndDate);
   }
