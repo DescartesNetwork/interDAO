@@ -7,6 +7,7 @@ import {
   DEFAULT_RPC_ENDPOINT,
   DEFAULT_INTERDAO_PROGRAM_ID,
   DEFAULT_INTERDAO_IDL,
+  FEE_OPTIONS,
 } from './constant'
 import {
   AnchorWallet,
@@ -17,6 +18,7 @@ import {
   DaoData,
   DaoRegime,
   DaoRegimes,
+  FeeOptions,
   IdlEvents,
   InvokedAccount,
   ProposalData,
@@ -376,14 +378,19 @@ class InterDAO {
     isMasters: boolean[],
     startDate: number,
     endDate: number,
-    fee: BN,
-    taxmanAddress: string,
     metadata: Buffer | Uint8Array,
     consensusMechanism: ConsensusMechanism = ConsensusMechanisms.StakedTokenCounter,
     consensusQuorum: ConsensusQuorum = ConsensusQuorums.Half,
+    feeOptions: Partial<FeeOptions> = {},
   ) => {
+    const { tax, taxmanAddress, revenue, revenuemanAddress } = {
+      ...FEE_OPTIONS,
+      ...feeOptions,
+    }
     if (!isAddress(daoAddress)) throw new Error('Invalid DAO address')
     if (!isAddress(taxmanAddress)) throw new Error('Invalid taxman address')
+    if (!isAddress(revenuemanAddress))
+      throw new Error('Invalid revenue receiver address')
     if (metadata.length !== 32) throw new Error('Invalid metadata path')
     if (
       pubkeys.length !== isSigners.length ||
@@ -404,6 +411,8 @@ class InterDAO {
     const daoPublicKey = new web3.PublicKey(daoAddress)
     const invokedProgramPublicKey = new web3.PublicKey(invokedProgramAddress)
     const taxmanPublicKey = new web3.PublicKey(taxmanAddress)
+    const revenuemanPublicKey = new web3.PublicKey(revenuemanAddress)
+
     const txId = await this.program.rpc.initializeProposal(
       data,
       pubkeys,
@@ -414,8 +423,9 @@ class InterDAO {
       consensusQuorum,
       new BN(startDate),
       new BN(endDate),
-      fee,
       metadata,
+      tax,
+      revenue,
       {
         accounts: {
           caller: this._provider.wallet.publicKey,
@@ -425,6 +435,7 @@ class InterDAO {
           systemProgram: web3.SystemProgram.programId,
           rent: web3.SYSVAR_RENT_PUBKEY,
           taxman: taxmanPublicKey,
+          revenueman: revenuemanPublicKey,
         },
       },
     )
@@ -475,8 +486,19 @@ class InterDAO {
    * @param amount Amount of tokens to vote.
    * @returns { txId, receiptAddress }
    */
-  voteFor = async (proposalAddress: string, amount: BN) => {
+  voteFor = async (
+    proposalAddress: string,
+    amount: BN,
+    feeOptions: Partial<FeeOptions> = {},
+  ) => {
+    const { tax, taxmanAddress, revenue, revenuemanAddress } = {
+      ...FEE_OPTIONS,
+      ...feeOptions,
+    }
     if (!isAddress(proposalAddress)) throw new Error('Invalid proposal address')
+    if (!isAddress(taxmanAddress)) throw new Error('Invalid taxman address')
+    if (!isAddress(revenuemanAddress))
+      throw new Error('Invalid revenue receiver address')
     if (amount.isNeg() || amount.isZero()) throw new Error('Invalid amount')
 
     const proposalPublicKey = new web3.PublicKey(proposalAddress)
@@ -504,8 +526,10 @@ class InterDAO {
       mint: mintPublicKey,
       owner: treasurerPublicKey,
     })
+    const taxmanPublicKey = new web3.PublicKey(taxmanAddress)
+    const revenuemanPublicKey = new web3.PublicKey(revenuemanAddress)
 
-    const txId = await this.program.rpc.voteFor(index, amount, {
+    const txId = await this.program.rpc.voteFor(index, amount, tax, revenue, {
       accounts: {
         authority: authorityPublicKey,
         src: srcPublicKey,
@@ -515,6 +539,8 @@ class InterDAO {
         proposal: proposalPublicKey,
         dao: daoPublicKey,
         receipt: receiptPublicKey,
+        taxman: taxmanPublicKey,
+        revenueman: revenuemanPublicKey,
         tokenProgram: utils.token.TOKEN_PROGRAM_ID,
         associatedTokenProgram: utils.token.ASSOCIATED_PROGRAM_ID,
         systemProgram: web3.SystemProgram.programId,
@@ -531,8 +557,19 @@ class InterDAO {
    * @param unlockedDate Unlocked date of the tokens.
    * @returns { txId, receiptAddress }
    */
-  voteAgainst = async (proposalAddress: string, amount: BN) => {
+  voteAgainst = async (
+    proposalAddress: string,
+    amount: BN,
+    feeOptions: Partial<FeeOptions> = {},
+  ) => {
+    const { tax, taxmanAddress, revenue, revenuemanAddress } = {
+      ...FEE_OPTIONS,
+      ...feeOptions,
+    }
     if (!isAddress(proposalAddress)) throw new Error('Invalid proposal address')
+    if (!isAddress(taxmanAddress)) throw new Error('Invalid taxman address')
+    if (!isAddress(revenuemanAddress))
+      throw new Error('Invalid revenue receiver address')
     if (amount.isNeg() || amount.isZero()) throw new Error('Invalid amount')
 
     const proposalPublicKey = new web3.PublicKey(proposalAddress)
@@ -560,23 +597,33 @@ class InterDAO {
       mint: mintPublicKey,
       owner: treasurerPublicKey,
     })
+    const taxmanPublicKey = new web3.PublicKey(taxmanAddress)
+    const revenuemanPublicKey = new web3.PublicKey(revenuemanAddress)
 
-    const txId = await this.program.rpc.voteAgainst(index, amount, {
-      accounts: {
-        authority: authorityPublicKey,
-        src: srcPublicKey,
-        treasurer: treasurerPublicKey,
-        mint: mintPublicKey,
-        treasury: treasuryPublicKey,
-        proposal: proposalPublicKey,
-        dao: daoPublicKey,
-        receipt: receiptPublicKey,
-        tokenProgram: utils.token.TOKEN_PROGRAM_ID,
-        associatedTokenProgram: utils.token.ASSOCIATED_PROGRAM_ID,
-        systemProgram: web3.SystemProgram.programId,
-        rent: web3.SYSVAR_RENT_PUBKEY,
+    const txId = await this.program.rpc.voteAgainst(
+      index,
+      amount,
+      tax,
+      revenue,
+      {
+        accounts: {
+          authority: authorityPublicKey,
+          src: srcPublicKey,
+          treasurer: treasurerPublicKey,
+          mint: mintPublicKey,
+          treasury: treasuryPublicKey,
+          proposal: proposalPublicKey,
+          dao: daoPublicKey,
+          receipt: receiptPublicKey,
+          taxman: taxmanPublicKey,
+          revenueman: revenuemanPublicKey,
+          tokenProgram: utils.token.TOKEN_PROGRAM_ID,
+          associatedTokenProgram: utils.token.ASSOCIATED_PROGRAM_ID,
+          systemProgram: web3.SystemProgram.programId,
+          rent: web3.SYSVAR_RENT_PUBKEY,
+        },
       },
-    })
+    )
     return { txId, receiptAddress }
   }
 

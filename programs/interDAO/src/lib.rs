@@ -11,7 +11,7 @@ pub use errors::*;
 pub use instructions::*;
 pub use schema::*;
 
-declare_id!("FBaHKV32ugTPy31SVrZuqDnZ6nTWepwkdSWUUY1r851q");
+declare_id!("3ZWBFTzWoT2RaCVJGqvfqjhZsKP9ohxKtZQcjc7mVrpX");
 
 #[program]
 pub mod inter_dao {
@@ -37,8 +37,9 @@ pub mod inter_dao {
     consesus_quorum: ConsensusQuorum,
     start_date: i64,
     end_date: i64,
-    fee: u64,
     metadata: [u8; 32],
+    tax: u64,
+    revenue: u64,
   ) -> Result<()> {
     initialize_proposal::exec(
       ctx,
@@ -51,17 +52,30 @@ pub mod inter_dao {
       consesus_quorum,
       start_date,
       end_date,
-      fee,
       metadata,
+      tax,
+      revenue,
     )
   }
 
-  pub fn vote_for(ctx: Context<VoteFor>, index: u64, amount: u64) -> Result<()> {
-    vote_for::exec(ctx, index, amount)
+  pub fn vote_for(
+    ctx: Context<VoteFor>,
+    index: u64,
+    amount: u64,
+    tax: u64,
+    revenue: u64,
+  ) -> Result<()> {
+    vote_for::exec(ctx, index, amount, tax, revenue)
   }
 
-  pub fn vote_against(ctx: Context<VoteAgainst>, index: u64, amount: u64) -> Result<()> {
-    vote_against::exec(ctx, index, amount)
+  pub fn vote_against(
+    ctx: Context<VoteAgainst>,
+    index: u64,
+    amount: u64,
+    tax: u64,
+    revenue: u64,
+  ) -> Result<()> {
+    vote_against::exec(ctx, index, amount, tax, revenue)
   }
 
   pub fn execute_proposal(ctx: Context<ExecuteProposal>) -> Result<()> {

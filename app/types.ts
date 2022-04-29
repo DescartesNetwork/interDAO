@@ -1,4 +1,4 @@
-import { IdlAccounts, IdlTypes, Idl } from '@project-serum/anchor'
+import { IdlAccounts, IdlTypes, Idl, BN } from '@project-serum/anchor'
 import { IdlEvent } from '@project-serum/anchor/dist/cjs/idl'
 import { TypeDef } from '@project-serum/anchor/dist/cjs/program/namespace/types'
 import { Wallet } from '@project-serum/anchor/dist/cjs/provider'
@@ -48,3 +48,10 @@ export type IdlEvents<T extends Idl> = TypeDefDictionary<
   NonNullable<T['events']>,
   Record<string, never>
 >
+
+export type FeeOptions = {
+  tax: BN
+  taxmanAddress: string
+  revenue: BN
+  revenuemanAddress: string
+}

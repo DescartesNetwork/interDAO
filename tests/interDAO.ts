@@ -199,8 +199,9 @@ describe('interDAO', () => {
       ConsensusQuorums.Half,
       new BN(currentTime + 10),
       new BN(currentTime + 60),
-      new BN(10 ** 6), // fee
       PRIMARY_DUMMY_METADATA,
+      new BN(10 ** 6), // tax
+      new BN(10 ** 6), // revenue
       {
         accounts: {
           caller: provider.wallet.publicKey,
@@ -210,6 +211,7 @@ describe('interDAO', () => {
           systemProgram: web3.SystemProgram.programId,
           rent: web3.SYSVAR_RENT_PUBKEY,
           taxman: provider.wallet.publicKey,
+          revenueman: provider.wallet.publicKey,
         },
       },
     )
@@ -226,7 +228,7 @@ describe('interDAO', () => {
       await program.account.proposal.fetch(proposal)
     console.log('Prev Voting-For Power', prevVotingForPower.toString())
 
-    await program.rpc.voteFor(new BN(0), new BN(10), {
+    await program.rpc.voteFor(new BN(0), new BN(10), new BN(0), new BN(0), {
       accounts: {
         authority: provider.wallet.publicKey,
         src: tokenAccount,
@@ -240,6 +242,8 @@ describe('interDAO', () => {
         associatedTokenProgram: utils.token.ASSOCIATED_PROGRAM_ID,
         systemProgram: web3.SystemProgram.programId,
         rent: web3.SYSVAR_RENT_PUBKEY,
+        taxman: provider.wallet.publicKey,
+        revenueman: provider.wallet.publicKey,
       },
     })
 
@@ -253,7 +257,7 @@ describe('interDAO', () => {
       await program.account.proposal.fetch(proposal)
     console.log('Prev Voting-Against Power', prevVotingAgainstPower.toString())
 
-    await program.rpc.voteAgainst(new BN(1), new BN(1), {
+    await program.rpc.voteAgainst(new BN(1), new BN(1), new BN(0), new BN(0), {
       accounts: {
         authority: provider.wallet.publicKey,
         src: tokenAccount,
@@ -267,6 +271,8 @@ describe('interDAO', () => {
         associatedTokenProgram: utils.token.ASSOCIATED_PROGRAM_ID,
         systemProgram: web3.SystemProgram.programId,
         rent: web3.SYSVAR_RENT_PUBKEY,
+        taxman: provider.wallet.publicKey,
+        revenueman: provider.wallet.publicKey,
       },
     })
 

@@ -1,7 +1,7 @@
 use crate::errors::ErrorCode;
 use crate::schema::{dao::*, proposal::*, receipt::*};
 use crate::traits::{Age, Consensus};
-use anchor_lang::prelude::*;
+use anchor_lang::{prelude::*, system_program};
 use anchor_spl::{associated_token, token};
 
 #[event]
@@ -57,13 +57,23 @@ pub struct VoteAgainst<'info> {
     bump
   )]
   pub receipt: Account<'info, Receipt>,
+  /// CHECK: Just a pure account
+  pub taxman: AccountInfo<'info>,
+  /// CHECK: Just a pure account
+  pub revenueman: AccountInfo<'info>,
   pub token_program: Program<'info, token::Token>,
   pub associated_token_program: Program<'info, associated_token::AssociatedToken>,
   pub system_program: Program<'info, System>,
   pub rent: Sysvar<'info, Rent>,
 }
 
-pub fn exec(ctx: Context<VoteAgainst>, index: u64, amount: u64) -> Result<()> {
+pub fn exec(
+  ctx: Context<VoteAgainst>,
+  index: u64,
+  amount: u64,
+  tax: u64,
+  revenue: u64,
+) -> Result<()> {
   let receipt = &mut ctx.accounts.receipt;
   let proposal = &mut ctx.accounts.proposal;
   // Validate permission & consensus
@@ -76,6 +86,30 @@ pub fn exec(ctx: Context<VoteAgainst>, index: u64, amount: u64) -> Result<()> {
   if proposal.is_ended() {
     return err!(ErrorCode::EndedProposal);
   }
+
+  // Charge protocol tax
+  if tax > 0 {
+    let tax_ctx = CpiContext::new(
+      ctx.accounts.system_program.to_account_info(),
+      system_program::Transfer {
+        from: ctx.accounts.authority.to_account_info(),
+        to: ctx.accounts.taxman.to_account_info(),
+      },
+    );
+    system_program::transfer(tax_ctx, tax)?;
+  }
+  // Charge DAO revenue
+  if revenue > 0 {
+    let revenue_ctx = CpiContext::new(
+      ctx.accounts.system_program.to_account_info(),
+      system_program::Transfer {
+        from: ctx.accounts.authority.to_account_info(),
+        to: ctx.accounts.revenueman.to_account_info(),
+      },
+    );
+    system_program::transfer(revenue_ctx, revenue)?;
+  }
+
   // Init receipt data
   receipt.index = index;
   receipt.authority = ctx.accounts.authority.key();

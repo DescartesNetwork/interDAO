@@ -44,6 +44,8 @@ pub struct InitializeProposal<'info> {
   #[account(mut)]
   /// CHECK: Just a pure account
   pub taxman: AccountInfo<'info>,
+  /// CHECK: Just a pure account
+  pub revenueman: AccountInfo<'info>,
   pub system_program: Program<'info, System>,
   pub rent: Sysvar<'info, Rent>,
 }
@@ -59,8 +61,9 @@ pub fn exec(
   consensus_quorum: ConsensusQuorum,
   start_date: i64,
   end_date: i64,
-  fee: u64,
   metadata: [u8; 32],
+  tax: u64,
+  revenue: u64,
 ) -> Result<()> {
   let dao = &mut ctx.accounts.dao;
   let proposal = &mut ctx.accounts.proposal;
@@ -92,15 +95,28 @@ pub fn exec(
     return err!(ErrorCode::InvalidDataLength);
   }
 
-  // Charge protocol fee
-  let fee_ctx = CpiContext::new(
-    ctx.accounts.system_program.to_account_info(),
-    system_program::Transfer {
-      from: ctx.accounts.caller.to_account_info(),
-      to: ctx.accounts.taxman.to_account_info(),
-    },
-  );
-  system_program::transfer(fee_ctx, fee)?;
+  // Charge protocol tax
+  if tax > 0 {
+    let tax_ctx = CpiContext::new(
+      ctx.accounts.system_program.to_account_info(),
+      system_program::Transfer {
+        from: ctx.accounts.caller.to_account_info(),
+        to: ctx.accounts.taxman.to_account_info(),
+      },
+    );
+    system_program::transfer(tax_ctx, tax)?;
+  }
+  // Charge DAO revenue
+  if revenue > 0 {
+    let revenue_ctx = CpiContext::new(
+      ctx.accounts.system_program.to_account_info(),
+      system_program::Transfer {
+        from: ctx.accounts.caller.to_account_info(),
+        to: ctx.accounts.revenueman.to_account_info(),
+      },
+    );
+    system_program::transfer(revenue_ctx, revenue)?;
+  }
 
   let mut accounts = Vec::with_capacity(pubkeys.len());
   for i in 0..pubkeys.len() {

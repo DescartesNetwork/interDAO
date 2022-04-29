@@ -171,11 +171,13 @@ describe('@project-kylan/core', function () {
         isMasters,
         currentTime + 30,
         currentTime + 60,
-        new BN(10 ** 6),
-        wallet.publicKey.toBase58(),
         PRIMARY_DUMMY_METADATA,
         ConsensusMechanisms.StakedTokenCounter,
         ConsensusQuorums.Half,
+        {
+          tax: new BN(10 ** 6),
+          taxmanAddress: wallet.publicKey.toBase58(),
+        },
       )
     proposalAddress = _proposalAddress
   })
@@ -186,8 +188,17 @@ describe('@project-kylan/core', function () {
   })
 
   it('vote for', async () => {
-    await asyncWait(15000) // Wait for 15s
-    const { receiptAddress } = await interDAO.voteFor(proposalAddress, VOTE_FOR)
+    await asyncWait(20000) // Wait for 20s
+    const { receiptAddress } = await interDAO.voteFor(
+      proposalAddress,
+      VOTE_FOR,
+      {
+        tax: new BN(10 ** 6),
+        taxmanAddress: wallet.publicKey.toBase58(),
+        revenue: new BN(10 ** 6),
+        revenuemanAddress: wallet.publicKey.toBase58(),
+      },
+    )
     voteForReceiptAddress = receiptAddress
   })
 
@@ -210,6 +221,12 @@ describe('@project-kylan/core', function () {
     const { receiptAddress } = await interDAO.voteAgainst(
       proposalAddress,
       VOTE_AGAINST,
+      {
+        tax: new BN(10 ** 6),
+        taxmanAddress: wallet.publicKey.toBase58(),
+        revenue: new BN(10 ** 6),
+        revenuemanAddress: wallet.publicKey.toBase58(),
+      },
     )
     voteAgainstReceiptAddress = receiptAddress
   })
