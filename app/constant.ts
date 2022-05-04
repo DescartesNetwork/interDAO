@@ -19,9 +19,11 @@ export const RECEIPT_DISCRIMINATOR = bs58.encode(
   BorshAccountsCoder.accountDiscriminator('receipt'),
 )
 
-export const FEE_OPTIONS: FeeOptions = {
+export const FEE_OPTIONS = (
+  walletAddress: string = new web3.Keypair().publicKey.toBase58(),
+): FeeOptions => ({
   tax: new BN(0),
-  taxmanAddress: new web3.Keypair().publicKey.toBase58(),
+  taxmanAddress: walletAddress,
   revenue: new BN(0),
-  revenuemanAddress: new web3.Keypair().publicKey.toBase58(),
-}
+  revenuemanAddress: walletAddress,
+})

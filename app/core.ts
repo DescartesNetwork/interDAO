@@ -384,7 +384,7 @@ class InterDAO {
     feeOptions: Partial<FeeOptions> = {},
   ) => {
     const { tax, taxmanAddress, revenue, revenuemanAddress } = {
-      ...FEE_OPTIONS,
+      ...FEE_OPTIONS(this._provider.wallet.publicKey.toBase58()),
       ...feeOptions,
     }
     if (!isAddress(daoAddress)) throw new Error('Invalid DAO address')
@@ -492,7 +492,7 @@ class InterDAO {
     feeOptions: Partial<FeeOptions> = {},
   ) => {
     const { tax, taxmanAddress, revenue, revenuemanAddress } = {
-      ...FEE_OPTIONS,
+      ...FEE_OPTIONS(this._provider.wallet.publicKey.toBase58()),
       ...feeOptions,
     }
     if (!isAddress(proposalAddress)) throw new Error('Invalid proposal address')
@@ -563,7 +563,7 @@ class InterDAO {
     feeOptions: Partial<FeeOptions> = {},
   ) => {
     const { tax, taxmanAddress, revenue, revenuemanAddress } = {
-      ...FEE_OPTIONS,
+      ...FEE_OPTIONS(this._provider.wallet.publicKey.toBase58()),
       ...feeOptions,
     }
     if (!isAddress(proposalAddress)) throw new Error('Invalid proposal address')
