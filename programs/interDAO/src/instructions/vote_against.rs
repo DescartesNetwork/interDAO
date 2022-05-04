@@ -57,8 +57,10 @@ pub struct VoteAgainst<'info> {
     bump
   )]
   pub receipt: Account<'info, Receipt>,
+  #[account(mut)]
   /// CHECK: Just a pure account
   pub taxman: AccountInfo<'info>,
+  #[account(mut)]
   /// CHECK: Just a pure account
   pub revenueman: AccountInfo<'info>,
   pub token_program: Program<'info, token::Token>,

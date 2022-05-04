@@ -40,7 +40,7 @@ const SECONDARY_DUMMY_METADATA = Buffer.from(
   'hex',
 )
 
-describe('@project-kylan/core', function () {
+describe('@interdao/core', function () {
   const wallet = new Wallet(web3.Keypair.fromSecretKey(PRIV_KEY_FOR_TEST_ONLY))
   let interDAO: InterDAO,
     connection: web3.Connection,

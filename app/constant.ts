@@ -21,7 +21,7 @@ export const RECEIPT_DISCRIMINATOR = bs58.encode(
 
 export const FEE_OPTIONS: FeeOptions = {
   tax: new BN(0),
-  taxmanAddress: web3.SystemProgram.programId.toBase58(),
+  taxmanAddress: new web3.Keypair().publicKey.toBase58(),
   revenue: new BN(0),
-  revenuemanAddress: web3.SystemProgram.programId.toBase58(),
+  revenuemanAddress: new web3.Keypair().publicKey.toBase58(),
 }

@@ -44,6 +44,7 @@ pub struct InitializeProposal<'info> {
   #[account(mut)]
   /// CHECK: Just a pure account
   pub taxman: AccountInfo<'info>,
+  #[account(mut)]
   /// CHECK: Just a pure account
   pub revenueman: AccountInfo<'info>,
   pub system_program: Program<'info, System>,
