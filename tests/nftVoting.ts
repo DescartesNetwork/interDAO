@@ -72,11 +72,11 @@ describe('interDAO', () => {
   let voteForReceipt3: web3.PublicKey
   let voteAgainstReceipt: web3.PublicKey
   let treasurer: web3.PublicKey
-  let treasury: web3.PublicKey
-  const currentTime = Math.floor(Number(new Date()) / 1000)
+  let currentTime
   let listeners: number[] = []
 
   before(async () => {
+    currentTime = Math.floor(Number(new Date()) / 1000)
     // Init a mint
     await initializeMint(9, mint, provider)
     // Derive token account
