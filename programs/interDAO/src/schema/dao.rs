@@ -57,8 +57,11 @@ impl Permission for Dao {
       DaoRegime::Autonomous => return true,
     }
   }
-  fn is_valid_mint_nft(&self, mint_nft: Pubkey) -> bool {
+  fn is_valid_mint_nft(&self, collection: Pubkey) -> bool {
     //todo
+    if self.mint == collection {
+      return true;
+    }
     return true;
   }
 }

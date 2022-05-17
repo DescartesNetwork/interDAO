@@ -83,7 +83,7 @@ pub fn exec(ctx: Context<VoteNftFor>, index: u64, tax: u64, revenue: u64) -> Res
   let amount = 1;
 
   // Validate mint_nft belongs to collection
-  if !dao.is_valid_mint_nft(ctx.accounts.mint_nft.key()) {
+  if !dao.is_valid_mint_nft(ctx.accounts.mint.key()) {
     return err!(ErrorCode::InvalidNftCollection);
   }
   // Validate permission & consensus
