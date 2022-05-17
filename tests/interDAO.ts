@@ -161,6 +161,7 @@ describe('interDAO', () => {
       DaoRegimes.Autonomous,
       new BN(1),
       PRIMARY_DUMMY_METADATA,
+      false,
       {
         accounts: {
           dao: dao.publicKey,
