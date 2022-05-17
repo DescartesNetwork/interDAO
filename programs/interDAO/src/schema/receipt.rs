@@ -21,6 +21,7 @@ pub struct Receipt {
   pub index: u64,
   pub authority: Pubkey,
   pub proposal: Pubkey,
+  pub mint_nft: Pubkey,
   pub amount: u64,
   pub power: u128,
   pub locked_date: i64,
@@ -31,6 +32,7 @@ pub struct Receipt {
 impl Receipt {
   pub const LEN: usize = DISCRIMINATOR_SIZE
     + U64_SIZE
+    + PUBKEY_SIZE
     + PUBKEY_SIZE
     + PUBKEY_SIZE
     + U64_SIZE

@@ -27,6 +27,7 @@ pub struct Dao {
   pub supply: u64,
   pub nonce: u64,
   pub metadata: [u8; 32],
+  pub is_nft: bool,
 }
 
 impl Dao {
@@ -37,6 +38,7 @@ impl Dao {
     + U8_SIZE
     + U64_SIZE
     + U64_SIZE
+    + U8_SIZE
     + U8_SIZE * 32;
 }
 
@@ -54,5 +56,9 @@ impl Permission for Dao {
       DaoRegime::Democratic => return self.authority == caller,
       DaoRegime::Autonomous => return true,
     }
+  }
+  fn is_valid_mint_nft(&self, mint_nft: Pubkey) -> bool {
+    //todo
+    return true;
   }
 }
