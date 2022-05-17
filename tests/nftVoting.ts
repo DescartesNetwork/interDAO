@@ -57,15 +57,19 @@ describe('interDAO', () => {
   let nftTokenAccount1: web3.PublicKey
   const mintNFT2 = new web3.Keypair()
   let nftTokenAccount2: web3.PublicKey
+  const mintNFT3 = new web3.Keypair()
+  let nftTokenAccount3: web3.PublicKey
 
   let treasuryNFT1: web3.PublicKey
   let treasuryNFT2: web3.PublicKey
+  let treasuryNFT3: web3.PublicKey
 
   const dao = new web3.Keypair()
   let master: web3.PublicKey
   let daoTreasury: web3.PublicKey
   let proposal: web3.PublicKey
   let voteForReceipt: web3.PublicKey
+  let voteForReceipt3: web3.PublicKey
   let voteAgainstReceipt: web3.PublicKey
   let treasurer: web3.PublicKey
   let treasury: web3.PublicKey
@@ -136,10 +140,33 @@ describe('interDAO', () => {
         authority: provider.wallet.publicKey,
       },
     })
+
+    // Init a mint NFT 3
+    await initializeMint(0, mintNFT3, provider)
+    // Derive NFT token account
+    nftTokenAccount3 = await utils.token.associatedAddress({
+      mint: mintNFT3.publicKey,
+      owner: provider.wallet.publicKey,
+    })
+    await initializeAccount(
+      nftTokenAccount3,
+      mintNFT3.publicKey,
+      provider.wallet.publicKey,
+      provider,
+    )
+    await spl.rpc.mintTo(new BN(1), {
+      accounts: {
+        mint: mintNFT3.publicKey,
+        to: nftTokenAccount3,
+        authority: provider.wallet.publicKey,
+      },
+    })
+
     console.log(
       'nftTokenAccount: ',
       await spl.account.token.fetch(nftTokenAccount1),
       await spl.account.token.fetch(nftTokenAccount2),
+      await spl.account.token.fetch(nftTokenAccount3),
     )
 
     // Derive master account
@@ -177,13 +204,17 @@ describe('interDAO', () => {
     )
     treasurer = treasurerPublicKey
 
-    //treasury for NFT1, NFT2
+    //treasury for NFT1, NFT2, NFT3
     treasuryNFT1 = await utils.token.associatedAddress({
       mint: mintNFT1.publicKey,
       owner: treasurer,
     })
     treasuryNFT2 = await utils.token.associatedAddress({
       mint: mintNFT2.publicKey,
+      owner: treasurer,
+    })
+    treasuryNFT3 = await utils.token.associatedAddress({
+      mint: mintNFT3.publicKey,
       owner: treasurer,
     })
 
@@ -197,6 +228,7 @@ describe('interDAO', () => {
       program.programId,
     )
     voteForReceipt = voteForReceiptPublicKey
+
     const [voteAgainstReceiptPublicKey] =
       await web3.PublicKey.findProgramAddress(
         [
@@ -208,6 +240,17 @@ describe('interDAO', () => {
         program.programId,
       )
     voteAgainstReceipt = voteAgainstReceiptPublicKey
+
+    const [voteForReceiptPublicKey3] = await web3.PublicKey.findProgramAddress(
+      [
+        Buffer.from('receipt'),
+        new BN(2).toArrayLike(Buffer, 'le', 8), // Browser compatibility
+        proposal.toBuffer(),
+        provider.wallet.publicKey.toBuffer(),
+      ],
+      program.programId,
+    )
+    voteForReceipt3 = voteForReceiptPublicKey3
   })
 
   it('add listeners', async () => {
@@ -359,18 +402,46 @@ describe('interDAO', () => {
     console.log('treasuryNFT2: ', await spl.account.token.fetch(treasuryNFT1))
   })
 
+  it('vote NFT3 for the proposal', async () => {
+    const { votingForPower: prevVotingForPower } =
+      await program.account.proposal.fetch(proposal)
+    console.log('Prev Voting-For Power', prevVotingForPower.toString())
+
+    await program.rpc.voteNftFor(new BN(2), new BN(0), new BN(0), {
+      accounts: {
+        authority: provider.wallet.publicKey,
+        src: nftTokenAccount3,
+        treasurer,
+        mint: mint.publicKey,
+        mintNft: mintNFT3.publicKey,
+        treasury: treasuryNFT3,
+        proposal,
+        dao: dao.publicKey,
+        receipt: voteForReceipt3,
+        tokenProgram: utils.token.TOKEN_PROGRAM_ID,
+        associatedTokenProgram: utils.token.ASSOCIATED_PROGRAM_ID,
+        systemProgram: web3.SystemProgram.programId,
+        rent: web3.SYSVAR_RENT_PUBKEY,
+        taxman: provider.wallet.publicKey,
+        revenueman: provider.wallet.publicKey,
+      },
+    })
+
+    const { votingForPower: nextVotingForPower } =
+      await program.account.proposal.fetch(proposal)
+    console.log('Next Voting_For Power', nextVotingForPower.toString())
+    console.log(
+      'nftTokenAccount3: ',
+      await spl.account.token.fetch(nftTokenAccount3),
+    )
+    console.log('treasuryNFT3: ', await spl.account.token.fetch(treasuryNFT3))
+  })
+
   it('execute the NFT proposal', async () => {
     await asyncWait(60000) // Wait for a minute
 
     const { amount: prevAmount } = await spl.account.token.fetch(daoTreasury)
     console.log('Prev Amount', prevAmount.toString())
-
-    console.log(
-      'remainingAccounts publicKey: ',
-      daoTreasury,
-      nftTokenAccount1,
-      master,
-    )
 
     const remainingAccounts = [
       { pubkey: daoTreasury, isSigner: false, isWritable: true },
@@ -396,7 +467,7 @@ describe('interDAO', () => {
     )
   })
 
-  it('close the vote-for receipt', async () => {
+  it('close the vote-nft-for receipt', async () => {
     const data = await program.account.receipt.fetch(voteForReceipt)
     console.log('Receipt Data', data)
     await program.rpc.closeNftVoting({
@@ -424,7 +495,35 @@ describe('interDAO', () => {
     }
   })
 
-  it('close the vote-against receipt', async () => {
+  it('close the vote-nft-for receipt 3', async () => {
+    const data = await program.account.receipt.fetch(voteForReceipt3)
+    console.log('Receipt Data', data)
+    await program.rpc.closeNftVoting({
+      accounts: {
+        authority: provider.wallet.publicKey,
+        dst: nftTokenAccount3,
+        treasurer,
+        mint: mint.publicKey,
+        mintNft: mintNFT3.publicKey,
+        treasury: treasuryNFT3,
+        proposal,
+        dao: dao.publicKey,
+        receipt: voteForReceipt3,
+        tokenProgram: utils.token.TOKEN_PROGRAM_ID,
+        associatedTokenProgram: utils.token.ASSOCIATED_PROGRAM_ID,
+        systemProgram: web3.SystemProgram.programId,
+        rent: web3.SYSVAR_RENT_PUBKEY,
+      },
+    })
+    try {
+      await program.account.receipt.fetch(voteForReceipt3)
+      throw new Error('The receipt account is not closed correctly')
+    } catch (er) {
+      console.log(er.message)
+    }
+  })
+
+  it('close the vote-nft-against receipt', async () => {
     const data = await program.account.receipt.fetch(voteAgainstReceipt)
     console.log('Receipt Data', data)
     await program.rpc.closeNftVoting({
