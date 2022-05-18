@@ -62,6 +62,6 @@ impl Permission for Dao {
     if self.mint == collection {
       return true;
     }
-    return true;
+    return false;
   }
 }
