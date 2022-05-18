@@ -6,8 +6,8 @@ import {
   Spl,
   BN,
   AnchorProvider,
+  Program,
 } from '@project-serum/anchor'
-import { Program } from '@project-serum/anchor'
 import { InterDao } from '../target/types/inter_dao'
 import { initializeAccount, initializeMint } from './pretest'
 import * as soproxABI from 'soprox-abi'

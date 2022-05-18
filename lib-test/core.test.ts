@@ -26,7 +26,7 @@ const PRIV_KEY_FOR_TEST_ONLY = Buffer.from([
   215, 166, 105, 84, 194, 133, 92, 34, 27, 39, 2, 158, 57, 64, 226, 198, 222,
   25, 127, 150, 87, 141, 234, 34, 239, 139, 107, 155, 32, 47, 199,
 ])
-const SUPLY = new BN(1_000_000_000)
+const SUPPLY = new BN(1_000_000_000)
 const TRANSFERRED_AMOUNT = new BN(1000)
 const CIRCULATED_SUPPLY = new BN(100)
 const VOTE_FOR = new BN(100)
@@ -74,7 +74,7 @@ describe('@interdao/core', function () {
       wallet.publicKey,
       provider,
     )
-    await splProgram.rpc.mintTo(SUPLY, {
+    await splProgram.rpc.mintTo(SUPPLY, {
       accounts: {
         mint: new web3.PublicKey(tokenAddress),
         to: new web3.PublicKey(associatedTokenAddress),
@@ -119,7 +119,7 @@ describe('@interdao/core', function () {
       masterPublicKey,
       interDAO.program.provider as AnchorProvider,
     )
-    await splProgram.rpc.mintTo(SUPLY, {
+    await splProgram.rpc.mintTo(SUPPLY, {
       accounts: {
         mint: new web3.PublicKey(tokenAddress),
         to: vaultPublicKey,
@@ -129,7 +129,7 @@ describe('@interdao/core', function () {
     const { amount } = (await splProgram.account.token.fetch(
       vaultPublicKey,
     )) as any
-    expect(SUPLY.eq(amount)).true
+    expect(SUPPLY.eq(amount)).true
   })
 
   it('get dao data', async () => {
@@ -266,7 +266,7 @@ describe('@interdao/core', function () {
     const { amount } = await splProgram.account.token.fetch(
       associatedTokenAddress,
     )
-    expect(SUPLY.add(TRANSFERRED_AMOUNT).eq(amount)).true
+    expect(SUPPLY.add(TRANSFERRED_AMOUNT).eq(amount)).true
   })
 
   it('update dao regime', async () => {
