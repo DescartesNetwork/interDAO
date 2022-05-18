@@ -28,6 +28,7 @@ pub struct Dao {
   pub nonce: u64,
   pub metadata: [u8; 32],
   pub is_nft: bool,
+  pub is_public: bool,
 }
 
 impl Dao {
@@ -38,8 +39,9 @@ impl Dao {
     + U8_SIZE
     + U64_SIZE
     + U64_SIZE
+    + U8_SIZE * 32
     + U8_SIZE
-    + U8_SIZE * 32;
+    + U8_SIZE;
 }
 
 impl Permission for Dao {

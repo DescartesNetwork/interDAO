@@ -10,6 +10,7 @@ pub struct InitializeDAOEvent {
   pub regime: DaoRegime,
   pub supply: u64,
   pub is_nft: bool,
+  pub is_public: bool,
 }
 
 #[derive(Accounts)]
@@ -38,6 +39,7 @@ pub fn exec(
   supply: u64,
   metadata: [u8; 32],
   is_nft: bool,
+  is_public: bool,
 ) -> Result<()> {
   let dao = &mut ctx.accounts.dao;
   dao.authority = ctx.accounts.authority.key();
@@ -48,6 +50,7 @@ pub fn exec(
   dao.nonce = 0;
   dao.metadata = metadata;
   dao.is_nft = is_nft;
+  dao.is_public = is_public;
 
   emit!(InitializeDAOEvent {
     dao: dao.key(),
@@ -55,7 +58,8 @@ pub fn exec(
     mint: dao.mint,
     regime: dao.regime,
     supply: dao.supply,
-    is_nft: is_nft
+    is_nft: is_nft,
+    is_public: is_public
   });
 
   Ok(())

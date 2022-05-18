@@ -124,7 +124,7 @@ pub fn exec(ctx: Context<VoteNftAgainst>, index: u64, tax: u64, revenue: u64) ->
   receipt.index = index;
   receipt.authority = ctx.accounts.authority.key();
   receipt.proposal = proposal.key();
-  receipt.mint_nft = ctx.accounts.mint_nft.key();
+  receipt.mint = ctx.accounts.mint_nft.key();
   // Lock tokens into the treasury
   let transfer_ctx = CpiContext::new(
     ctx.accounts.token_program.to_account_info(),

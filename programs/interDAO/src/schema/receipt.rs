@@ -21,7 +21,7 @@ pub struct Receipt {
   pub index: u64,
   pub authority: Pubkey,
   pub proposal: Pubkey,
-  pub mint_nft: Pubkey,
+  pub mint: Pubkey,
   pub amount: u64,
   pub power: u128,
   pub locked_date: i64,
