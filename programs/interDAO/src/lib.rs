@@ -120,4 +120,8 @@ pub mod inter_dao {
   pub fn transfer_authority(ctx: Context<TransferAuthority>) -> Result<()> {
     transfer_authority::exec(ctx)
   }
+
+  pub fn get_nft_metadata(ctx: Context<NftMetadata>) -> Result<()> {
+    get_nft_metadata::exec(ctx)
+  }
 }

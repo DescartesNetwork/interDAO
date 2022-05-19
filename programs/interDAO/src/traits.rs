@@ -7,7 +7,8 @@ use anchor_lang::prelude::*;
 pub trait Permission {
   fn is_authorized_to_propose(&self, caller: Pubkey) -> bool;
   fn is_authorized_to_execute(&self, caller: Pubkey) -> bool;
-  fn is_valid_mint_nft(&self, mint_nft: Pubkey) -> bool;
+  fn is_valid_mint_nft(&self, collection: Pubkey, mint_nft: Pubkey, metadata: &AccountInfo)
+    -> bool;
 }
 
 ///

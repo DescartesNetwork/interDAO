@@ -31,6 +31,8 @@ pub struct VoteNftFor<'info> {
   pub mint: Box<Account<'info, token::Mint>>,
   // NFT mint
   pub mint_nft: Box<Account<'info, token::Mint>>,
+  /// CHECK: Just a pure account'
+  pub metadata: AccountInfo<'info>,
   #[account(
     init_if_needed,
     payer = authority,
@@ -83,7 +85,11 @@ pub fn exec(ctx: Context<VoteNftFor>, index: u64, tax: u64, revenue: u64) -> Res
   let amount = 1;
 
   // Validate mint_nft belongs to collection
-  if !dao.is_valid_mint_nft(ctx.accounts.mint.key()) {
+  if !dao.is_valid_mint_nft(
+    ctx.accounts.mint.key(),
+    ctx.accounts.mint_nft.key(),
+    &ctx.accounts.metadata,
+  ) {
     return err!(ErrorCode::InvalidNftCollection);
   }
   // Validate permission & consensus

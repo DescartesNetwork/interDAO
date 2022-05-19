@@ -1,6 +1,7 @@
 use crate::constants::*;
 use crate::traits::Permission;
 use anchor_lang::prelude::*;
+use mpl_token_metadata::state::Metadata;
 
 ///
 /// DAO mechanism
@@ -59,11 +60,19 @@ impl Permission for Dao {
       DaoRegime::Autonomous => return true,
     }
   }
-  fn is_valid_mint_nft(&self, collection: Pubkey) -> bool {
-    //todo
-    if self.mint == collection {
-      return true;
+  fn is_valid_mint_nft(
+    &self,
+    collection: Pubkey,
+    mint_nft: Pubkey,
+    metadata: &AccountInfo,
+  ) -> bool {
+    let metadata: Metadata = Metadata::from_account_info(&metadata.to_account_info()).unwrap();
+    if self.mint != metadata.collection.unwrap().key
+      || self.mint != collection
+      || mint_nft != metadata.mint
+    {
+      return false;
     }
-    return false;
+    return true;
   }
 }

@@ -24,3 +24,5 @@ pub mod update_dao_metadata;
 pub use update_dao_metadata::*;
 pub mod update_supply;
 pub use update_supply::*;
+pub mod get_nft_metadata;
+pub use get_nft_metadata::*;
