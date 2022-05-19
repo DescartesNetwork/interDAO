@@ -331,24 +331,6 @@ describe('interDAO', () => {
     console.log('DAO data', data)
   })
 
-  it('Validate NFT', async () => {
-    await program.rpc.getNftMetadata({
-      accounts: {
-        authority: provider.wallet.publicKey,
-        mint: collection,
-        mintNft: mintNFT1,
-        metadata: metadataAddressNFT1,
-        dao: dao.publicKey,
-        tokenProgram: utils.token.TOKEN_PROGRAM_ID,
-        associatedTokenProgram: utils.token.ASSOCIATED_PROGRAM_ID,
-        systemProgram: web3.SystemProgram.programId,
-        rent: web3.SYSVAR_RENT_PUBKEY,
-        revenueman: provider.wallet.publicKey,
-      },
-      signers: [wallet.payer],
-    })
-  })
-
   it('initialize a NFT proposal', async () => {
     const buf = new soproxABI.struct(
       [
