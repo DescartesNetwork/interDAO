@@ -23,8 +23,9 @@ pub mod inter_dao {
     supply: u64,
     metadata: [u8; 32],
     is_nft: bool,
+    is_public: bool,
   ) -> Result<()> {
-    initialize_dao::exec(ctx, regime, supply, metadata, is_nft)
+    initialize_dao::exec(ctx, regime, supply, metadata, is_nft, is_public)
   }
 
   pub fn initialize_proposal(
