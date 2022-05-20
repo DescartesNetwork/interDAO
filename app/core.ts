@@ -24,7 +24,12 @@ import {
   ProposalData,
   ReceiptData,
 } from './types'
-import { findProposal, findReceipt, isAddress } from './utils'
+import {
+  findNftMetadataAddress,
+  findProposal,
+  findReceipt,
+  isAddress,
+} from './utils'
 
 class InterDAO {
   private _connection: web3.Connection
@@ -318,6 +323,8 @@ class InterDAO {
    * @param tokenSupply The total number of tokens that is fairly distributed out to the community. Circulating amount could be acceptable definition.
    * @param dao (Optional) The dao keypair. If it's not provided, a new one will be auto generated.
    * @param regime (Optional) DAO regime. Default is Dictatorial.
+   * @param isNftVoting (Optional) If isNftVoting equals to "true", tokenAddress will be collection address of NFT.
+   * @param isPublic (Optional) If isPublic equals to "true", it will be public DAO.
    * @returns { txId, daoAddress }
    */
   initializeDao = async (
@@ -326,6 +333,8 @@ class InterDAO {
     metadata: Buffer | Uint8Array,
     dao: web3.Keypair = web3.Keypair.generate(),
     regime: DaoRegime = DaoRegimes.Dictatorial,
+    isNftVoting: Boolean = false,
+    isPublic: Boolean = true,
   ) => {
     if (!isAddress(tokenAddress)) throw new Error('Invalid token address')
     if (!tokenSupply.gt(new BN(0)))
@@ -340,6 +349,8 @@ class InterDAO {
       regime,
       tokenSupply,
       metadata,
+      isNftVoting,
+      isPublic,
       {
         accounts: {
           dao: dao.publicKey,
@@ -551,6 +562,80 @@ class InterDAO {
   }
 
   /**
+   * Vote for a proposal.
+   * @param proposalAddress Proposal address.
+   * @param mintNFTAddress NFT address.
+   * @returns { txId, receiptAddress }
+   */
+  voteNftFor = async (
+    proposalAddress: string,
+    mintNFTAddress: string,
+    feeOptions: Partial<FeeOptions> = {},
+  ) => {
+    const { tax, taxmanAddress, revenue, revenuemanAddress } = {
+      ...FEE_OPTIONS(this._provider.wallet.publicKey.toBase58()),
+      ...feeOptions,
+    }
+    if (!isAddress(proposalAddress)) throw new Error('Invalid proposal address')
+    if (!isAddress(taxmanAddress)) throw new Error('Invalid taxman address')
+    if (!isAddress(revenuemanAddress))
+      throw new Error('Invalid revenue receiver address')
+
+    const proposalPublicKey = new web3.PublicKey(proposalAddress)
+    const nftPublicKey = new web3.PublicKey(mintNFTAddress)
+    const metadataAddress = findNftMetadataAddress(nftPublicKey)
+    const metadataPublicKey = new web3.PublicKey(metadataAddress)
+    const { dao: daoPublicKey } = await this.getProposalData(proposalAddress)
+    const { mint: mintPublicKey } = await this.getDaoData(
+      daoPublicKey.toBase58(),
+    )
+    const authorityPublicKey = this._provider.wallet.publicKey
+    const srcPublicKey = await utils.token.associatedAddress({
+      mint: nftPublicKey,
+      owner: authorityPublicKey,
+    })
+    const index = await this.findAvailableReceiptIndex(
+      proposalAddress,
+      authorityPublicKey.toBase58(),
+    )
+    const receiptAddress = await this.deriveReceiptAddress(
+      index,
+      proposalAddress,
+    )
+    const receiptPublicKey = new web3.PublicKey(receiptAddress)
+    const treasurerAddress = await this.deriveTreasurerAddress(proposalAddress)
+    const treasurerPublicKey = new web3.PublicKey(treasurerAddress)
+    const treasuryPublicKey = await utils.token.associatedAddress({
+      mint: nftPublicKey,
+      owner: treasurerPublicKey,
+    })
+    const taxmanPublicKey = new web3.PublicKey(taxmanAddress)
+    const revenuemanPublicKey = new web3.PublicKey(revenuemanAddress)
+
+    const txId = await this.program.rpc.voteNftFor(index, tax, revenue, {
+      accounts: {
+        authority: authorityPublicKey,
+        src: srcPublicKey,
+        treasurer: treasurerPublicKey,
+        mint: mintPublicKey,
+        mintNft: nftPublicKey,
+        metadata: metadataPublicKey,
+        treasury: treasuryPublicKey,
+        proposal: proposalPublicKey,
+        dao: daoPublicKey,
+        receipt: receiptPublicKey,
+        taxman: taxmanPublicKey,
+        revenueman: revenuemanPublicKey,
+        tokenProgram: utils.token.TOKEN_PROGRAM_ID,
+        associatedTokenProgram: utils.token.ASSOCIATED_PROGRAM_ID,
+        systemProgram: web3.SystemProgram.programId,
+        rent: web3.SYSVAR_RENT_PUBKEY,
+      },
+    })
+    return { txId, receiptAddress }
+  }
+
+  /**
    * Vote against a proposal.
    * @param proposalAddress Proposal address.
    * @param amount Amount of tokens to vote.
@@ -628,6 +713,81 @@ class InterDAO {
   }
 
   /**
+   * Vote against a proposal.
+   * @param proposalAddress Proposal address.
+   * @param mintNFTAddress NFT address.
+   * @param unlockedDate Unlocked date of the tokens.
+   * @returns { txId, receiptAddress }
+   */
+  voteNftAgainst = async (
+    proposalAddress: string,
+    mintNFTAddress: string,
+    feeOptions: Partial<FeeOptions> = {},
+  ) => {
+    const { tax, taxmanAddress, revenue, revenuemanAddress } = {
+      ...FEE_OPTIONS(this._provider.wallet.publicKey.toBase58()),
+      ...feeOptions,
+    }
+    if (!isAddress(proposalAddress)) throw new Error('Invalid proposal address')
+    if (!isAddress(taxmanAddress)) throw new Error('Invalid taxman address')
+    if (!isAddress(revenuemanAddress))
+      throw new Error('Invalid revenue receiver address')
+
+    const proposalPublicKey = new web3.PublicKey(proposalAddress)
+    const nftPublicKey = new web3.PublicKey(mintNFTAddress)
+    const metadataAddress = findNftMetadataAddress(nftPublicKey)
+    const metadataPublicKey = new web3.PublicKey(metadataAddress)
+    const { dao: daoPublicKey } = await this.getProposalData(proposalAddress)
+    const { mint: mintPublicKey } = await this.getDaoData(
+      daoPublicKey.toBase58(),
+    )
+    const authorityPublicKey = this._provider.wallet.publicKey
+    const srcPublicKey = await utils.token.associatedAddress({
+      mint: nftPublicKey,
+      owner: authorityPublicKey,
+    })
+    const index = await this.findAvailableReceiptIndex(
+      proposalAddress,
+      authorityPublicKey.toBase58(),
+    )
+    const receiptAddress = await this.deriveReceiptAddress(
+      index,
+      proposalAddress,
+    )
+    const receiptPublicKey = new web3.PublicKey(receiptAddress)
+    const treasurerAddress = await this.deriveTreasurerAddress(proposalAddress)
+    const treasurerPublicKey = new web3.PublicKey(treasurerAddress)
+    const treasuryPublicKey = await utils.token.associatedAddress({
+      mint: nftPublicKey,
+      owner: treasurerPublicKey,
+    })
+    const taxmanPublicKey = new web3.PublicKey(taxmanAddress)
+    const revenuemanPublicKey = new web3.PublicKey(revenuemanAddress)
+
+    const txId = await this.program.rpc.voteNftAgainst(index, tax, revenue, {
+      accounts: {
+        authority: authorityPublicKey,
+        src: srcPublicKey,
+        treasurer: treasurerPublicKey,
+        mint: mintPublicKey,
+        mintNft: nftPublicKey,
+        metadata: metadataPublicKey,
+        treasury: treasuryPublicKey,
+        proposal: proposalPublicKey,
+        dao: daoPublicKey,
+        receipt: receiptPublicKey,
+        taxman: taxmanPublicKey,
+        revenueman: revenuemanPublicKey,
+        tokenProgram: utils.token.TOKEN_PROGRAM_ID,
+        associatedTokenProgram: utils.token.ASSOCIATED_PROGRAM_ID,
+        systemProgram: web3.SystemProgram.programId,
+        rent: web3.SYSVAR_RENT_PUBKEY,
+      },
+    })
+    return { txId, receiptAddress }
+  }
+
+  /**
    * Close receipts and collect tokens and lamports back.
    * @param receiptAddress Receipt address.
    * @param amount Amount of tokens to void.
@@ -669,6 +829,61 @@ class InterDAO {
         dst: dstPublicKey,
         treasurer: treasurerPublicKey,
         mint: mintPublicKey,
+        treasury: treasuryPublicKey,
+        proposal: proposalPublicKey,
+        dao: daoPublicKey,
+        receipt: receiptPublicKey,
+        tokenProgram: utils.token.TOKEN_PROGRAM_ID,
+        associatedTokenProgram: utils.token.ASSOCIATED_PROGRAM_ID,
+        systemProgram: web3.SystemProgram.programId,
+        rent: web3.SYSVAR_RENT_PUBKEY,
+      },
+    })
+    return { txId, receiptAddress }
+  }
+
+  /**
+   * Close receipts and collect tokens and lamports back.
+   * @param receiptAddress Receipt address.
+   * @returns { txId, receiptAddress }
+   */
+  closeNftVoting = async (receiptAddress: string) => {
+    if (!isAddress(receiptAddress)) throw new Error('Invalid receipt address')
+
+    const { proposal: proposalPublicKey, mint } = await this.getReceiptData(
+      receiptAddress,
+    )
+    const proposalAddress = proposalPublicKey.toBase58()
+    const { dao: daoPublicKey, endDate } = await this.getProposalData(
+      proposalAddress,
+    )
+    const { mint: mintPublicKey } = await this.getDaoData(
+      daoPublicKey.toBase58(),
+    )
+    const authorityPublicKey = this._provider.wallet.publicKey
+    const dstPublicKey = await utils.token.associatedAddress({
+      mint: mint,
+      owner: authorityPublicKey,
+    })
+    const receiptPublicKey = new web3.PublicKey(receiptAddress)
+    const treasurerAddress = await this.deriveTreasurerAddress(proposalAddress)
+    const treasurerPublicKey = new web3.PublicKey(treasurerAddress)
+    const treasuryPublicKey = await utils.token.associatedAddress({
+      mint: mint,
+      owner: treasurerPublicKey,
+    })
+
+    const currentTime = await this.getCurrentUnixTimestamp()
+    if (currentTime <= endDate.toNumber())
+      throw new Error('The proposal is not ended yet')
+
+    const txId = await this.program.rpc.closeNftVoting({
+      accounts: {
+        authority: authorityPublicKey,
+        dst: dstPublicKey,
+        treasurer: treasurerPublicKey,
+        mint: mintPublicKey,
+        mintNft: mint,
         treasury: treasuryPublicKey,
         proposal: proposalPublicKey,
         dao: daoPublicKey,
