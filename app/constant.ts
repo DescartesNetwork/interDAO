@@ -6,7 +6,7 @@ import { FeeOptions } from './types'
 
 export const DEFAULT_RPC_ENDPOINT = 'https://api.devnet.solana.com'
 export const DEFAULT_INTERDAO_PROGRAM_ID =
-  '3ZWBFTzWoT2RaCVJGqvfqjhZsKP9ohxKtZQcjc7mVrpX'
+  '2TkBpvZFqAkQZCHgQ5KbHup7SPPk5gkjPVXDnF19d1DW'
 export const DEFAULT_INTERDAO_IDL = IDL
 
 export const DAO_DISCRIMINATOR = bs58.encode(
