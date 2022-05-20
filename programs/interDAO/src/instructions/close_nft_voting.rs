@@ -1,6 +1,6 @@
 use crate::errors::ErrorCode;
 use crate::schema::{dao::*, proposal::*, receipt::*};
-use crate::traits::Age;
+use crate::traits::{Age, Permission};
 use anchor_lang::prelude::*;
 use anchor_spl::{associated_token, token};
 
@@ -19,20 +19,20 @@ pub struct CloseNftVoting<'info> {
   #[account(
     init_if_needed,
     payer = authority,
-    associated_token::mint = mint_nft,
+    associated_token::mint = mint,
     associated_token::authority = authority
   )]
   pub dst: Box<Account<'info, token::TokenAccount>>,
   #[account(seeds = [b"treasurer".as_ref(), &proposal.key().to_bytes()], bump)]
   /// CHECK: Just a pure account
   pub treasurer: AccountInfo<'info>,
-  // NFT (collection)
+  /// NFT mint
   pub mint: Box<Account<'info, token::Mint>>,
-  // NFT mint
-  pub mint_nft: Box<Account<'info, token::Mint>>,
+  /// CHECK: NFT metadata
+  pub metadata: AccountInfo<'info>,
   #[account(
     mut,
-    associated_token::mint = mint_nft,
+    associated_token::mint = mint,
     associated_token::authority = treasurer
   )]
   pub treasury: Box<Account<'info, token::TokenAccount>>,
@@ -47,7 +47,7 @@ pub struct CloseNftVoting<'info> {
     has_one = dao
   )]
   pub proposal: Account<'info, Proposal>,
-  #[account(has_one = mint)]
+  #[account(mut)]
   pub dao: Account<'info, Dao>,
   #[account(
     mut,
@@ -72,6 +72,11 @@ pub struct CloseNftVoting<'info> {
 pub fn exec(ctx: Context<CloseNftVoting>) -> Result<()> {
   let receipt = &mut ctx.accounts.receipt;
   let proposal = &ctx.accounts.proposal;
+  let dao = &mut ctx.accounts.dao;
+  // Validate mint_nft belongs to collection
+  if !dao.is_valid_mint_nft(ctx.accounts.mint.key(), &ctx.accounts.metadata) {
+    return err!(ErrorCode::InvalidNftCollection);
+  }
   // Validate permission & consensus
   if !proposal.is_ended() {
     return err!(ErrorCode::NotEndedProposal);

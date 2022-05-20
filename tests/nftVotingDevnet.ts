@@ -94,13 +94,13 @@ describe('interDAO_NFT_Voting', () => {
     'PV64GFvXc9vNWWvQs9XAxGYjy9xzACHw9yAJhAypeVe',
   )
   const mintNFT1 = new web3.PublicKey(
-    'YW1U2CZgbT4bzggJrve7pZd1h7T6ZLpNrRFdrPKoweK',
+    '6LGK11vFr4vZkxccc9xHVjkj3X15tArHMGZm7agswUJN',
   )
   const mintNFT2 = new web3.PublicKey(
-    'CBfqsMGxWuT8ZBsxCwPpZLhe8U8BESHjMpcdbeokK7aM',
+    'D3JBrQnWwDPGDYDaYLSdqtqNvhueFhr3RjwWEcUgvw7G',
   )
   const mintNFT3 = new web3.PublicKey(
-    '7pmyX7cDb6sSzRLTPtFZxCBtJbiJSdUTbFp8qRa2Vfyw',
+    'DgvNAogiS9GBDFHP6hQoTncCpVjuDUCfo1ZrApNhj6zJ',
   )
 
   console.log('NFT1: ', mintNFT1)
@@ -520,8 +520,8 @@ describe('interDAO_NFT_Voting', () => {
         authority: provider.wallet.publicKey,
         dst: nftTokenAccount1,
         treasurer,
-        mint: collection,
-        mintNft: mintNFT1,
+        mint: mintNFT1,
+        metadata: metadataAddressNFT1,
         treasury: treasuryNFT1,
         proposal,
         dao: dao.publicKey,
@@ -539,6 +539,7 @@ describe('interDAO_NFT_Voting', () => {
       console.log(er.message)
     }
   })
+
   it('close the vote-nft-for receipt2', async () => {
     const data = await program.account.receipt.fetch(voteForReceipt2)
     console.log('Receipt2 Data', data)
@@ -547,8 +548,8 @@ describe('interDAO_NFT_Voting', () => {
         authority: provider.wallet.publicKey,
         dst: nftTokenAccount2,
         treasurer,
-        mint: collection,
-        mintNft: mintNFT2,
+        mint: mintNFT2,
+        metadata: metadataAddressNFT2,
         treasury: treasuryNFT2,
         proposal,
         dao: dao.publicKey,
@@ -575,8 +576,8 @@ describe('interDAO_NFT_Voting', () => {
         authority: provider.wallet.publicKey,
         dst: nftTokenAccount3,
         treasurer,
-        mint: collection,
-        mintNft: mintNFT3,
+        mint: mintNFT3,
+        metadata: metadataAddressNFT3,
         treasury: treasuryNFT3,
         proposal,
         dao: dao.publicKey,
