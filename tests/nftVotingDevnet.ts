@@ -73,7 +73,7 @@ export const DaoRegimes = {
   Autonomous: { autonomous: {} },
 }
 
-describe('interDAO', () => {
+describe('interDAO_NFT_Voting', () => {
   // Configure the client to use the devnet cluster.
   const wallet = new Wallet(web3.Keypair.fromSecretKey(PRIV_KEY_FOR_TEST_ONLY))
   const connection = new web3.Connection(DEFAULT_CLUSTER, DEFAULT_COMMITMENT)
@@ -387,8 +387,7 @@ describe('interDAO', () => {
         authority: provider.wallet.publicKey,
         src: nftTokenAccount1,
         treasurer,
-        mint: collection,
-        mintNft: mintNFT1,
+        mint: mintNFT1,
         metadata: metadataAddressNFT1,
         treasury: treasuryNFT1,
         proposal,
@@ -423,8 +422,7 @@ describe('interDAO', () => {
         authority: provider.wallet.publicKey,
         src: nftTokenAccount2,
         treasurer,
-        mint: collection,
-        mintNft: mintNFT2,
+        mint: mintNFT2,
         metadata: metadataAddressNFT2,
         treasury: treasuryNFT2,
         proposal,
@@ -459,8 +457,7 @@ describe('interDAO', () => {
         authority: provider.wallet.publicKey,
         src: nftTokenAccount3,
         treasurer,
-        mint: collection,
-        mintNft: mintNFT3,
+        mint: mintNFT3,
         metadata: metadataAddressNFT3,
         treasury: treasuryNFT3,
         proposal,

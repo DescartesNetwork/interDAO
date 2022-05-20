@@ -10,7 +10,7 @@ pub struct VoteAgainstEvent {
   pub dao: Pubkey,
   pub proposal: Pubkey,
   pub receipt: Pubkey,
-  pub amount: u64,
+  pub amount_nft: u64,
 }
 
 #[derive(Accounts)]
@@ -20,23 +20,21 @@ pub struct VoteNftAgainst<'info> {
   pub authority: Signer<'info>,
   #[account(
     mut,
-    associated_token::mint = mint_nft,
+    associated_token::mint = mint,
     associated_token::authority = authority
   )]
   pub src: Box<Account<'info, token::TokenAccount>>,
   #[account(seeds = [b"treasurer".as_ref(), &proposal.key().to_bytes()], bump)]
   /// CHECK: Just a pure account
   pub treasurer: AccountInfo<'info>,
-  // NFT (collection)
-  pub mint: Box<Account<'info, token::Mint>>,
   // NFT mint
-  pub mint_nft: Box<Account<'info, token::Mint>>,
+  pub mint: Box<Account<'info, token::Mint>>,
   /// CHECK: Just a pure account'
   pub metadata: AccountInfo<'info>,
   #[account(
     init_if_needed,
     payer = authority,
-    associated_token::mint = mint_nft,
+    associated_token::mint = mint,
     associated_token::authority = treasurer
   )]
   pub treasury: Box<Account<'info, token::TokenAccount>>,
@@ -51,7 +49,7 @@ pub struct VoteNftAgainst<'info> {
     has_one = dao
   )]
   pub proposal: Account<'info, Proposal>,
-  #[account(has_one = mint)]
+  #[account(mut)]
   pub dao: Account<'info, Dao>,
   #[account(
     init,
@@ -82,14 +80,10 @@ pub fn exec(ctx: Context<VoteNftAgainst>, index: u64, tax: u64, revenue: u64) ->
   let receipt = &mut ctx.accounts.receipt;
   let proposal = &mut ctx.accounts.proposal;
   let dao = &mut ctx.accounts.dao;
-  let amount = 1;
+  let amount_nft = 1;
 
   // Validate mint_nft belongs to collection
-  if !dao.is_valid_mint_nft(
-    ctx.accounts.mint.key(),
-    ctx.accounts.mint_nft.key(),
-    &ctx.accounts.metadata,
-  ) {
+  if !dao.is_valid_mint_nft(ctx.accounts.mint.key(), &ctx.accounts.metadata) {
     return err!(ErrorCode::InvalidNftCollection);
   }
   // Validate permission & consensus
@@ -130,7 +124,7 @@ pub fn exec(ctx: Context<VoteNftAgainst>, index: u64, tax: u64, revenue: u64) ->
   receipt.index = index;
   receipt.authority = ctx.accounts.authority.key();
   receipt.proposal = proposal.key();
-  receipt.mint = ctx.accounts.mint_nft.key();
+  receipt.mint = ctx.accounts.mint.key();
   // Lock tokens into the treasury
   let transfer_ctx = CpiContext::new(
     ctx.accounts.token_program.to_account_info(),
@@ -140,10 +134,10 @@ pub fn exec(ctx: Context<VoteNftAgainst>, index: u64, tax: u64, revenue: u64) ->
       authority: ctx.accounts.authority.to_account_info(),
     },
   );
-  token::transfer(transfer_ctx, amount)?;
+  token::transfer(transfer_ctx, amount_nft)?;
   // Count the votes
   proposal
-    .vote_against(amount, receipt)
+    .vote_against(amount_nft, receipt)
     .ok_or(ErrorCode::Overflow)?;
 
   emit!(VoteAgainstEvent {
@@ -151,7 +145,7 @@ pub fn exec(ctx: Context<VoteNftAgainst>, index: u64, tax: u64, revenue: u64) ->
     dao: ctx.accounts.dao.key(),
     proposal: receipt.proposal,
     receipt: receipt.key(),
-    amount
+    amount_nft
   });
 
   Ok(())
