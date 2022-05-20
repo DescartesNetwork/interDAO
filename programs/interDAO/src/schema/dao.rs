@@ -60,17 +60,9 @@ impl Permission for Dao {
       DaoRegime::Autonomous => return true,
     }
   }
-  fn is_valid_mint_nft(
-    &self,
-    collection: Pubkey,
-    mint_nft: Pubkey,
-    metadata: &AccountInfo,
-  ) -> bool {
+  fn is_valid_mint_nft(&self, mint_nft: Pubkey, metadata: &AccountInfo) -> bool {
     let metadata: Metadata = Metadata::from_account_info(&metadata.to_account_info()).unwrap();
-    if self.mint != metadata.collection.unwrap().key
-      || self.mint != collection
-      || mint_nft != metadata.mint
-    {
+    if self.mint != metadata.collection.unwrap().key || mint_nft != metadata.mint {
       return false;
     }
     return true;
