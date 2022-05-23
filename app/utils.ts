@@ -72,12 +72,8 @@ export const findReceipt = async (
  * @returns NFT metadata public key
  */
 export const findNftMetadataAddress = async (nftAddress: web3.PublicKey) => {
-  try {
-    const metadataPDA = await programs.metadata.Metadata.getPDA(
-      new web3.PublicKey(nftAddress),
-    )
-    return metadataPDA
-  } catch (err) {
-    console.log('Failed to fetch metadataPDA', err)
-  }
+  const metadataPDA = await programs.metadata.Metadata.getPDA(
+    new web3.PublicKey(nftAddress),
+  )
+  return metadataPDA
 }
