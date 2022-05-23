@@ -210,7 +210,7 @@ describe('@interdao/nft_voting', function () {
   })
 
   it('vote NFT1 for', async () => {
-    await asyncWait(20000) // Wait for 5s
+    await asyncWait(20000) // Wait for 20s
     const { receiptAddress } = await interDAO.voteNftFor(
       proposalAddress,
       MINT_NFT1.toBase58(),
