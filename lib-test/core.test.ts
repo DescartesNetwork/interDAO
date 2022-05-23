@@ -188,7 +188,7 @@ describe('@interdao/core', function () {
   })
 
   it('vote for', async () => {
-    await asyncWait(30000) // Wait for 20s
+    await asyncWait(20000) // Wait for 20s
     const { receiptAddress } = await interDAO.voteFor(
       proposalAddress,
       VOTE_FOR,

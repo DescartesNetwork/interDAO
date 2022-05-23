@@ -1,5 +1,4 @@
 import { BN, web3 } from '@project-serum/anchor'
-import { programs } from '@metaplex/js'
 
 /**
  * Validate an address
@@ -64,16 +63,4 @@ export const findReceipt = async (
     programId,
   )
   return receiptPublicKey
-}
-
-/**
- * Find the NFT metadata address
- * @param nftAddress public key
- * @returns NFT metadata public key
- */
-export const findNftMetadataAddress = async (nftAddress: web3.PublicKey) => {
-  const metadataPDA = await programs.metadata.Metadata.getPDA(
-    new web3.PublicKey(nftAddress),
-  )
-  return metadataPDA
 }
