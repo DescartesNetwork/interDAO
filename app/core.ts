@@ -583,12 +583,10 @@ class InterDAO {
 
     const proposalPublicKey = new web3.PublicKey(proposalAddress)
     const nftPublicKey = new web3.PublicKey(mintNFTAddress)
-    const metadataAddress = findNftMetadataAddress(nftPublicKey)
-    const metadataPublicKey = new web3.PublicKey(metadataAddress)
+    const metadataAddress = await findNftMetadataAddress(nftPublicKey)
+    const metadataPublicKey = metadataAddress.toBase58()
     const { dao: daoPublicKey } = await this.getProposalData(proposalAddress)
-    const { mint: mintPublicKey } = await this.getDaoData(
-      daoPublicKey.toBase58(),
-    )
+
     const authorityPublicKey = this._provider.wallet.publicKey
     const srcPublicKey = await utils.token.associatedAddress({
       mint: nftPublicKey,
@@ -617,8 +615,7 @@ class InterDAO {
         authority: authorityPublicKey,
         src: srcPublicKey,
         treasurer: treasurerPublicKey,
-        mint: mintPublicKey,
-        mintNft: nftPublicKey,
+        mint: nftPublicKey,
         metadata: metadataPublicKey,
         treasury: treasuryPublicKey,
         proposal: proposalPublicKey,
@@ -738,9 +735,7 @@ class InterDAO {
     const metadataAddress = findNftMetadataAddress(nftPublicKey)
     const metadataPublicKey = new web3.PublicKey(metadataAddress)
     const { dao: daoPublicKey } = await this.getProposalData(proposalAddress)
-    const { mint: mintPublicKey } = await this.getDaoData(
-      daoPublicKey.toBase58(),
-    )
+
     const authorityPublicKey = this._provider.wallet.publicKey
     const srcPublicKey = await utils.token.associatedAddress({
       mint: nftPublicKey,
@@ -769,8 +764,7 @@ class InterDAO {
         authority: authorityPublicKey,
         src: srcPublicKey,
         treasurer: treasurerPublicKey,
-        mint: mintPublicKey,
-        mintNft: nftPublicKey,
+        mint: nftPublicKey,
         metadata: metadataPublicKey,
         treasury: treasuryPublicKey,
         proposal: proposalPublicKey,
@@ -850,40 +844,37 @@ class InterDAO {
   closeNftVoting = async (receiptAddress: string) => {
     if (!isAddress(receiptAddress)) throw new Error('Invalid receipt address')
 
-    const { proposal: proposalPublicKey, mint } = await this.getReceiptData(
-      receiptAddress,
-    )
+    const { proposal: proposalPublicKey, mint: nftPublicKey } =
+      await this.getReceiptData(receiptAddress)
     const proposalAddress = proposalPublicKey.toBase58()
     const { dao: daoPublicKey, endDate } = await this.getProposalData(
       proposalAddress,
     )
-    const { mint: mintPublicKey } = await this.getDaoData(
-      daoPublicKey.toBase58(),
-    )
+
+    const metadataAddress = await findNftMetadataAddress(nftPublicKey)
+    const metadataPublicKey = metadataAddress.toBase58()
     const authorityPublicKey = this._provider.wallet.publicKey
     const dstPublicKey = await utils.token.associatedAddress({
-      mint: mint,
+      mint: nftPublicKey,
       owner: authorityPublicKey,
     })
     const receiptPublicKey = new web3.PublicKey(receiptAddress)
     const treasurerAddress = await this.deriveTreasurerAddress(proposalAddress)
     const treasurerPublicKey = new web3.PublicKey(treasurerAddress)
     const treasuryPublicKey = await utils.token.associatedAddress({
-      mint: mint,
+      mint: nftPublicKey,
       owner: treasurerPublicKey,
     })
-
     const currentTime = await this.getCurrentUnixTimestamp()
     if (currentTime <= endDate.toNumber())
       throw new Error('The proposal is not ended yet')
-
     const txId = await this.program.rpc.closeNftVoting({
       accounts: {
         authority: authorityPublicKey,
         dst: dstPublicKey,
         treasurer: treasurerPublicKey,
-        mint: mintPublicKey,
-        mintNft: mint,
+        mint: nftPublicKey,
+        metadata: metadataPublicKey,
         treasury: treasuryPublicKey,
         proposal: proposalPublicKey,
         dao: daoPublicKey,
