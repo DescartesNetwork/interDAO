@@ -91,16 +91,16 @@ describe('interDAO_NFT_Voting', () => {
 
   // NFT
   const collection = new web3.PublicKey(
-    'PV64GFvXc9vNWWvQs9XAxGYjy9xzACHw9yAJhAypeVe',
+    'HgzRcYdx9GnJcXUBrPEiVxdTMk6LtbZZYHb9hAZ2GnMJ',
   )
   const mintNFT1 = new web3.PublicKey(
-    '6LGK11vFr4vZkxccc9xHVjkj3X15tArHMGZm7agswUJN',
+    '2dnKYHscHnwkm3vj1SzkH3cdfj8qsc5VYW4qC4oH3b1J',
   )
   const mintNFT2 = new web3.PublicKey(
-    'D3JBrQnWwDPGDYDaYLSdqtqNvhueFhr3RjwWEcUgvw7G',
+    '41j3fNSWk4DzDYiX5ZitVMSNskLf4ajgHsEJPFLQ9xjs',
   )
   const mintNFT3 = new web3.PublicKey(
-    'DgvNAogiS9GBDFHP6hQoTncCpVjuDUCfo1ZrApNhj6zJ',
+    'G6y4PLa4U5aX13TYNiDLuUrr95Lfsq7Yaq1EKYY46TUZ',
   )
 
   console.log('NFT1: ', mintNFT1)

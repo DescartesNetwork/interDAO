@@ -732,7 +732,7 @@ class InterDAO {
 
     const proposalPublicKey = new web3.PublicKey(proposalAddress)
     const nftPublicKey = new web3.PublicKey(mintNFTAddress)
-    const metadataAddress = findNftMetadataAddress(nftPublicKey)
+    const metadataAddress = await findNftMetadataAddress(nftPublicKey)
     const metadataPublicKey = new web3.PublicKey(metadataAddress)
     const { dao: daoPublicKey } = await this.getProposalData(proposalAddress)
 
