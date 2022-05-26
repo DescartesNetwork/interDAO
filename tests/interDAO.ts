@@ -65,7 +65,7 @@ describe('interDAO', () => {
 
   before(async () => {
     // Init a mint
-    await initializeMint(9, mint, provider)
+    await initializeMint(9, mint, provider, spl)
     // Derive token account
     tokenAccount = await utils.token.associatedAddress({
       mint: mint.publicKey,
@@ -161,6 +161,8 @@ describe('interDAO', () => {
       DaoRegimes.Autonomous,
       new BN(1),
       PRIMARY_DUMMY_METADATA,
+      false,
+      true,
       {
         accounts: {
           dao: dao.publicKey,
