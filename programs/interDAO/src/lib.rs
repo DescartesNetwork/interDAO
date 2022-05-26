@@ -11,7 +11,7 @@ pub use errors::*;
 pub use instructions::*;
 pub use schema::*;
 
-declare_id!("2TkBpvZFqAkQZCHgQ5KbHup7SPPk5gkjPVXDnF19d1DW");
+declare_id!("7FKRyt1oxi7zszLkK5xXzbc5vHnR4MEmyUKrRn7Rwpgt");
 
 #[program]
 pub mod inter_dao {

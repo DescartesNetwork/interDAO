@@ -1,16 +1,16 @@
 [features]
 seeds = false
 [programs.localnet]
-inter_dao = "2TkBpvZFqAkQZCHgQ5KbHup7SPPk5gkjPVXDnF19d1DW"
+inter_dao = "7FKRyt1oxi7zszLkK5xXzbc5vHnR4MEmyUKrRn7Rwpgt"
 [programs.devnet]
-inter_dao = "2TkBpvZFqAkQZCHgQ5KbHup7SPPk5gkjPVXDnF19d1DW"
+inter_dao = "7FKRyt1oxi7zszLkK5xXzbc5vHnR4MEmyUKrRn7Rwpgt"
 
 [registry]
 url = "https://anchor.projectserum.com"
 
 [provider]
 cluster = "devnet"
-wallet = "/Users/descartesnetworkdev/my-solana-wallet/my-keypair.json"
+wallet = "./wallet-keypair.json"
 
 [scripts]
 test = "yarn run ts-mocha -p ./tsconfig.json -t 1000000 tests/**/*.ts"

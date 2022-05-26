@@ -13,7 +13,7 @@ const TOKEN_METADATA_PROGRAM_ID = new web3.PublicKey(
   'metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s',
 )
 export const INTERDAO_PROGRAM_ID =
-  '2TkBpvZFqAkQZCHgQ5KbHup7SPPk5gkjPVXDnF19d1DW'
+  '7FKRyt1oxi7zszLkK5xXzbc5vHnR4MEmyUKrRn7Rwpgt'
 export const DEFAULT_COMMITMENT = 'confirmed'
 export const DEFAULT_CLUSTER = 'https://api.devnet.solana.com'
 
