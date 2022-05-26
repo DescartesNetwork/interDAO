@@ -26,11 +26,10 @@ const PRIV_KEY_FOR_TEST_ONLY = Buffer.from([
   215, 166, 105, 84, 194, 133, 92, 34, 27, 39, 2, 158, 57, 64, 226, 198, 222,
   25, 127, 150, 87, 141, 234, 34, 239, 139, 107, 155, 32, 47, 199,
 ])
-const SUPPLY = new BN(1_000_000_000)
+const SUPLY = new BN(1_000_000_000)
 const TRANSFERRED_AMOUNT = new BN(1000)
-const CIRCULATED_SUPPLY = new BN(100)
-const VOTE_FOR = new BN(100)
-const VOTE_AGAINST = new BN(10)
+const CIRCULATED_SUPPLY = new BN(4)
+
 const PRIMARY_DUMMY_METADATA = Buffer.from(
   'b2b68b298b9bfa2dd2931cd879e5c9997837209476d25319514b46f7b7911d31',
   'hex',
@@ -40,15 +39,34 @@ const SECONDARY_DUMMY_METADATA = Buffer.from(
   'hex',
 )
 
-describe('@interdao/core', function () {
+// NFT
+const NFT_COLLECTION = new web3.PublicKey(
+  'HgzRcYdx9GnJcXUBrPEiVxdTMk6LtbZZYHb9hAZ2GnMJ',
+)
+const MINT_NFT1 = new web3.PublicKey(
+  '2dnKYHscHnwkm3vj1SzkH3cdfj8qsc5VYW4qC4oH3b1J',
+)
+const MINT_NFT2 = new web3.PublicKey(
+  '41j3fNSWk4DzDYiX5ZitVMSNskLf4ajgHsEJPFLQ9xjs',
+)
+const MINT_NFT3 = new web3.PublicKey(
+  'G6y4PLa4U5aX13TYNiDLuUrr95Lfsq7Yaq1EKYY46TUZ',
+)
+const MINT_NFT4 = new web3.PublicKey(
+  '2hGafui2jQndYjpff1sTtZN2WYsrimWorMmcRhvts6zZ',
+)
+
+describe('@interdao/nft_voting', function () {
   const wallet = new Wallet(web3.Keypair.fromSecretKey(PRIV_KEY_FOR_TEST_ONLY))
   let interDAO: InterDAO,
     connection: web3.Connection,
     splProgram: Program<SplToken>,
     daoAddress: string,
     proposalAddress: string,
-    voteForReceiptAddress: string,
-    voteAgainstReceiptAddress: string,
+    voteForReceiptAddress1: string,
+    voteForReceiptAddress2: string,
+    voteAgainstReceiptAddress3: string,
+    voteForReceiptAddress4: string,
     tokenAddress: string,
     associatedTokenAddress: string,
     currentTime: number
@@ -74,7 +92,7 @@ describe('@interdao/core', function () {
       wallet.publicKey,
       provider,
     )
-    await splProgram.rpc.mintTo(SUPPLY, {
+    await splProgram.rpc.mintTo(SUPLY, {
       accounts: {
         mint: new web3.PublicKey(tokenAddress),
         to: new web3.PublicKey(associatedTokenAddress),
@@ -99,9 +117,13 @@ describe('@interdao/core', function () {
 
   it('initialize a dao', async () => {
     const { daoAddress: _daoAddress } = await interDAO.initializeDao(
-      tokenAddress,
+      NFT_COLLECTION.toBase58(),
       CIRCULATED_SUPPLY,
       PRIMARY_DUMMY_METADATA,
+      undefined,
+      undefined,
+      true,
+      true,
     )
     daoAddress = _daoAddress
   })
@@ -119,7 +141,7 @@ describe('@interdao/core', function () {
       masterPublicKey,
       interDAO.program.provider as AnchorProvider,
     )
-    await splProgram.rpc.mintTo(SUPPLY, {
+    await splProgram.rpc.mintTo(SUPLY, {
       accounts: {
         mint: new web3.PublicKey(tokenAddress),
         to: vaultPublicKey,
@@ -129,7 +151,7 @@ describe('@interdao/core', function () {
     const { amount } = (await splProgram.account.token.fetch(
       vaultPublicKey,
     )) as any
-    expect(SUPPLY.eq(amount)).true
+    expect(SUPLY.eq(amount)).true
   })
 
   it('get dao data', async () => {
@@ -169,11 +191,11 @@ describe('@interdao/core', function () {
         isSigners,
         isWritables,
         isMasters,
-        currentTime + 30,
+        currentTime + 20,
         currentTime + 60,
         PRIMARY_DUMMY_METADATA,
         ConsensusMechanisms.StakedTokenCounter,
-        ConsensusQuorums.Half,
+        ConsensusQuorums.OneThird,
         {
           tax: new BN(10 ** 6),
           taxmanAddress: wallet.publicKey.toBase58(),
@@ -187,11 +209,11 @@ describe('@interdao/core', function () {
     expect(dao.toBase58()).to.equal(daoAddress)
   })
 
-  it('vote for', async () => {
-    await asyncWait(30000) // Wait for 20s
-    const { receiptAddress } = await interDAO.voteFor(
+  it('vote NFT1 for', async () => {
+    await asyncWait(20000) // Wait for 5s
+    const { receiptAddress } = await interDAO.voteNftFor(
       proposalAddress,
-      VOTE_FOR,
+      MINT_NFT1.toBase58(),
       {
         tax: new BN(10 ** 6),
         taxmanAddress: wallet.publicKey.toBase58(),
@@ -199,10 +221,10 @@ describe('@interdao/core', function () {
         revenuemanAddress: wallet.publicKey.toBase58(),
       },
     )
-    voteForReceiptAddress = receiptAddress
+    voteForReceiptAddress1 = receiptAddress
   })
 
-  it('get receipt data after vote', async () => {
+  it('get receipt data after vote NFT1', async () => {
     const nextIndex = await interDAO.findAvailableReceiptIndex(
       proposalAddress,
       wallet.publicKey.toBase58(),
@@ -212,15 +234,20 @@ describe('@interdao/core', function () {
       proposalAddress,
       true,
     )
-    expect(voteForReceiptAddress).to.equal(expectedReceiptAddress)
-    const { amount } = await interDAO.getReceiptData(voteForReceiptAddress)
-    expect(amount.eq(VOTE_FOR)).true
+    expect(voteForReceiptAddress1).to.equal(expectedReceiptAddress)
+    const { amount } = await interDAO.getReceiptData(voteForReceiptAddress1)
+    const proposalData = await interDAO.getProposalData(proposalAddress)
+    console.log(
+      'voting_for_power after vote NFT 1: ',
+      proposalData.votingForPower.toNumber(),
+    )
+    expect(amount.eq(new BN(1))).true
   })
 
-  it('vote against', async () => {
-    const { receiptAddress } = await interDAO.voteAgainst(
+  it('vote NFT2 for', async () => {
+    const { receiptAddress } = await interDAO.voteNftFor(
       proposalAddress,
-      VOTE_AGAINST,
+      MINT_NFT2.toBase58(),
       {
         tax: new BN(10 ** 6),
         taxmanAddress: wallet.publicKey.toBase58(),
@@ -228,10 +255,10 @@ describe('@interdao/core', function () {
         revenuemanAddress: wallet.publicKey.toBase58(),
       },
     )
-    voteAgainstReceiptAddress = receiptAddress
+    voteForReceiptAddress2 = receiptAddress
   })
 
-  it('get receipt data after vote', async () => {
+  it('get receipt data after vote NFT2', async () => {
     const nextIndex = await interDAO.findAvailableReceiptIndex(
       proposalAddress,
       wallet.publicKey.toBase58(),
@@ -241,17 +268,92 @@ describe('@interdao/core', function () {
       proposalAddress,
       true,
     )
-    expect(voteAgainstReceiptAddress).to.equal(expectedReceiptAddress)
-    const { amount } = await interDAO.getReceiptData(voteAgainstReceiptAddress)
-    expect(amount.eq(VOTE_AGAINST)).true
+    expect(voteForReceiptAddress2).to.equal(expectedReceiptAddress)
+    const { amount } = await interDAO.getReceiptData(voteForReceiptAddress2)
+    const proposalData = await interDAO.getProposalData(proposalAddress)
+    console.log(
+      'voting_for_power after vote NFT 2: ',
+      proposalData.votingForPower.toNumber(),
+    )
+    expect(amount.eq(new BN(1))).true
+  })
+
+  it('vote NFT3 against', async () => {
+    const { receiptAddress } = await interDAO.voteNftAgainst(
+      proposalAddress,
+      MINT_NFT3.toBase58(),
+      {
+        tax: new BN(10 ** 6),
+        taxmanAddress: wallet.publicKey.toBase58(),
+        revenue: new BN(10 ** 6),
+        revenuemanAddress: wallet.publicKey.toBase58(),
+      },
+    )
+    voteAgainstReceiptAddress3 = receiptAddress
+  })
+
+  it('get receipt data after vote against NFT3', async () => {
+    const nextIndex = await interDAO.findAvailableReceiptIndex(
+      proposalAddress,
+      wallet.publicKey.toBase58(),
+    )
+    const expectedReceiptAddress = await interDAO.deriveReceiptAddress(
+      nextIndex.sub(new BN(1)),
+      proposalAddress,
+      true,
+    )
+    expect(voteAgainstReceiptAddress3).to.equal(expectedReceiptAddress)
+    const { amount } = await interDAO.getReceiptData(voteAgainstReceiptAddress3)
+    const proposalData = await interDAO.getProposalData(proposalAddress)
+    console.log(
+      'voting_against_power after vote NFT 3: ',
+      proposalData.votingAgainstPower.toNumber(),
+    )
+    expect(amount.eq(new BN(1))).true
+  })
+
+  it('vote NFT4 for', async () => {
+    const { receiptAddress } = await interDAO.voteNftFor(
+      proposalAddress,
+      MINT_NFT4.toBase58(),
+      {
+        tax: new BN(10 ** 6),
+        taxmanAddress: wallet.publicKey.toBase58(),
+        revenue: new BN(10 ** 6),
+        revenuemanAddress: wallet.publicKey.toBase58(),
+      },
+    )
+    voteForReceiptAddress4 = receiptAddress
+  })
+
+  it('get receipt data after vote NFT4', async () => {
+    const nextIndex = await interDAO.findAvailableReceiptIndex(
+      proposalAddress,
+      wallet.publicKey.toBase58(),
+    )
+    const expectedReceiptAddress = await interDAO.deriveReceiptAddress(
+      nextIndex.sub(new BN(1)),
+      proposalAddress,
+      true,
+    )
+    expect(voteForReceiptAddress4).to.equal(expectedReceiptAddress)
+    const { amount } = await interDAO.getReceiptData(voteForReceiptAddress4)
+    const proposalData = await interDAO.getProposalData(proposalAddress)
+    console.log(
+      'voting_for_power after vote NFT 4: ',
+      proposalData.votingForPower.toNumber(),
+    )
+    expect(amount.eq(new BN(1))).true
   })
 
   it('execute the proposal', async () => {
-    await asyncWait(30000) // Wait for 30s
+    await asyncWait(40000) // Wait for 40s
     const { amount: prevAmount } = await splProgram.account.token.fetch(
       associatedTokenAddress,
     )
-    await interDAO.executeProposal(proposalAddress)
+    console.log('proposalAddress: ', proposalAddress)
+    const { txId } = await interDAO.executeProposal(proposalAddress)
+    console.log('txId: ', txId)
     const { amount: nextAmount } = await splProgram.account.token.fetch(
       associatedTokenAddress,
     )
@@ -261,12 +363,14 @@ describe('@interdao/core', function () {
   })
 
   it('close all receipts', async () => {
-    await interDAO.close(voteForReceiptAddress)
-    await interDAO.close(voteAgainstReceiptAddress)
+    await interDAO.closeNftVoting(voteForReceiptAddress1)
+    await interDAO.closeNftVoting(voteForReceiptAddress2)
+    await interDAO.closeNftVoting(voteAgainstReceiptAddress3)
+    await interDAO.closeNftVoting(voteForReceiptAddress4)
     const { amount } = await splProgram.account.token.fetch(
       associatedTokenAddress,
     )
-    expect(SUPPLY.add(TRANSFERRED_AMOUNT).eq(amount)).true
+    expect(SUPLY.add(TRANSFERRED_AMOUNT).eq(amount)).true
   })
 
   it('update dao regime', async () => {

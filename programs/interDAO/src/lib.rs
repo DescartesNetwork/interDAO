@@ -11,7 +11,7 @@ pub use errors::*;
 pub use instructions::*;
 pub use schema::*;
 
-declare_id!("3ZWBFTzWoT2RaCVJGqvfqjhZsKP9ohxKtZQcjc7mVrpX");
+declare_id!("7FKRyt1oxi7zszLkK5xXzbc5vHnR4MEmyUKrRn7Rwpgt");
 
 #[program]
 pub mod inter_dao {
@@ -22,8 +22,10 @@ pub mod inter_dao {
     regime: DaoRegime,
     supply: u64,
     metadata: [u8; 32],
+    is_nft: bool,
+    is_public: bool,
   ) -> Result<()> {
-    initialize_dao::exec(ctx, regime, supply, metadata)
+    initialize_dao::exec(ctx, regime, supply, metadata, is_nft, is_public)
   }
 
   pub fn initialize_proposal(
@@ -68,6 +70,10 @@ pub mod inter_dao {
     vote_for::exec(ctx, index, amount, tax, revenue)
   }
 
+  pub fn vote_nft_for(ctx: Context<VoteNftFor>, index: u64, tax: u64, revenue: u64) -> Result<()> {
+    vote_nft_for::exec(ctx, index, tax, revenue)
+  }
+
   pub fn vote_against(
     ctx: Context<VoteAgainst>,
     index: u64,
@@ -78,12 +84,25 @@ pub mod inter_dao {
     vote_against::exec(ctx, index, amount, tax, revenue)
   }
 
+  pub fn vote_nft_against(
+    ctx: Context<VoteNftAgainst>,
+    index: u64,
+    tax: u64,
+    revenue: u64,
+  ) -> Result<()> {
+    vote_nft_against::exec(ctx, index, tax, revenue)
+  }
+
   pub fn execute_proposal(ctx: Context<ExecuteProposal>) -> Result<()> {
     execute_proposal::exec(ctx)
   }
 
   pub fn close(ctx: Context<Close>) -> Result<()> {
     close::exec(ctx)
+  }
+
+  pub fn close_nft_voting(ctx: Context<CloseNftVoting>) -> Result<()> {
+    close_nft_voting::exec(ctx)
   }
 
   pub fn update_dao_regime(ctx: Context<UpdateDaoRegime>, regime: DaoRegime) -> Result<()> {

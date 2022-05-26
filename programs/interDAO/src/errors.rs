@@ -28,4 +28,6 @@ pub enum ErrorCode {
   InvalidStartDate,
   #[msg("End date need to be greater than start date and current date")]
   InvalidEndDate,
+  #[msg("Invalid NFT collection")]
+  InvalidNftCollection,
 }
