@@ -57,7 +57,6 @@ pub struct Close<'info> {
     bump,
     has_one = authority,
     has_one = proposal,
-    close = authority
   )]
   pub receipt: Account<'info, Receipt>,
   pub token_program: Program<'info, token::Token>,
