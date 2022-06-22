@@ -290,7 +290,7 @@ class InterDAO {
   /**
    * Derive treasurer address of a proposal.
    * @param proposalAddress Proposal address.
-   * @returns Treasurer address that holds the secure token treasuries of the printer.
+   * @returns Treasurer address that holds the secure token treasuries of the proposal.
    */
   deriveTreasurerAddress = async (proposalAddress: string) => {
     if (!isAddress(proposalAddress)) throw new Error('Invalid proposal address')
