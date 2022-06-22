@@ -105,7 +105,7 @@ pub fn exec(ctx: Context<CloseNftVoting>) -> Result<()> {
     authority: receipt.authority,
     receipt: receipt.key(),
     mint: ctx.accounts.mint.key(),
-    amount: receipt.amount
+    amount: amount
   });
 
   Ok(())
