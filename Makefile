@@ -7,6 +7,6 @@ test:
 	make build && anchor test
 .PHONY: test
 
-deploy-dev:
+deploy:
 	make build && anchor deploy --provider.cluster devnet
-.PHONY: deploy-dev
+.PHONY: deploy

@@ -57,7 +57,6 @@ pub struct Close<'info> {
     bump,
     has_one = authority,
     has_one = proposal,
-    close = authority
   )]
   pub receipt: Account<'info, Receipt>,
   pub token_program: Program<'info, token::Token>,
@@ -73,12 +72,16 @@ pub fn exec(ctx: Context<Close>) -> Result<()> {
   if !proposal.is_ended() {
     return err!(ErrorCode::NotEndedProposal);
   }
+
+  let amount = receipt.amount;
+  receipt.amount = 0;
   // Unlock tokens out of the treasury
   let seeds: &[&[&[u8]]] = &[&[
     b"treasurer".as_ref(),
     &proposal.key().to_bytes(),
     &[*ctx.bumps.get("treasurer").ok_or(ErrorCode::NoBump)?],
   ]];
+
   let transfer_ctx = CpiContext::new_with_signer(
     ctx.accounts.token_program.to_account_info(),
     token::Transfer {
@@ -88,7 +91,7 @@ pub fn exec(ctx: Context<Close>) -> Result<()> {
     },
     seeds,
   );
-  token::transfer(transfer_ctx, receipt.amount)?;
+  token::transfer(transfer_ctx, amount)?;
 
   emit!(CloseEvent {
     authority: receipt.authority,
@@ -96,10 +99,6 @@ pub fn exec(ctx: Context<Close>) -> Result<()> {
     mint: ctx.accounts.mint.key(),
     amount: receipt.amount
   });
-
-  // Safety clear data
-  receipt.amount = 0;
-  receipt.power = 0;
 
   Ok(())
 }
