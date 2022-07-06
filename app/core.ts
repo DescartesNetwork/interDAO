@@ -501,6 +501,7 @@ class InterDAO {
     proposalAddress: string,
     amount: BN,
     feeOptions: Partial<FeeOptions> = {},
+    sendAndConfirm = true,
   ) => {
     const { tax, taxmanAddress, revenue, revenuemanAddress } = {
       ...FEE_OPTIONS(this._provider.wallet.publicKey.toBase58()),
@@ -540,8 +541,10 @@ class InterDAO {
     const taxmanPublicKey = new web3.PublicKey(taxmanAddress)
     const revenuemanPublicKey = new web3.PublicKey(revenuemanAddress)
 
-    const txId = await this.program.rpc.voteFor(index, amount, tax, revenue, {
-      accounts: {
+    let txId = ''
+    const tx = await this.program.methods
+      .voteFor(index, amount, tax, revenue)
+      .accounts({
         authority: authorityPublicKey,
         src: srcPublicKey,
         treasurer: treasurerPublicKey,
@@ -556,9 +559,10 @@ class InterDAO {
         associatedTokenProgram: utils.token.ASSOCIATED_PROGRAM_ID,
         systemProgram: web3.SystemProgram.programId,
         rent: web3.SYSVAR_RENT_PUBKEY,
-      },
-    })
-    return { txId, receiptAddress }
+      })
+      .transaction()
+    if (sendAndConfirm) txId = await this._provider.sendAndConfirm(tx)
+    return { txId, receiptAddress, tx }
   }
 
   /**
@@ -571,6 +575,7 @@ class InterDAO {
     proposalAddress: string,
     mintNFTAddress: string,
     feeOptions: Partial<FeeOptions> = {},
+    sendAndConfirm = true,
   ) => {
     const { tax, taxmanAddress, revenue, revenuemanAddress } = {
       ...FEE_OPTIONS(this._provider.wallet.publicKey.toBase58()),
@@ -610,8 +615,10 @@ class InterDAO {
     const taxmanPublicKey = new web3.PublicKey(taxmanAddress)
     const revenuemanPublicKey = new web3.PublicKey(revenuemanAddress)
 
-    const txId = await this.program.rpc.voteNftFor(index, tax, revenue, {
-      accounts: {
+    let txId = ''
+    const tx = await this.program.methods
+      .voteNftFor(index, tax, revenue)
+      .accounts({
         authority: authorityPublicKey,
         src: srcPublicKey,
         treasurer: treasurerPublicKey,
@@ -627,9 +634,10 @@ class InterDAO {
         associatedTokenProgram: utils.token.ASSOCIATED_PROGRAM_ID,
         systemProgram: web3.SystemProgram.programId,
         rent: web3.SYSVAR_RENT_PUBKEY,
-      },
-    })
-    return { txId, receiptAddress }
+      })
+      .transaction()
+    if (sendAndConfirm) txId = await this._provider.sendAndConfirm(tx)
+    return { txId, receiptAddress, tx }
   }
 
   /**
@@ -643,6 +651,7 @@ class InterDAO {
     proposalAddress: string,
     amount: BN,
     feeOptions: Partial<FeeOptions> = {},
+    sendAndConfirm = true,
   ) => {
     const { tax, taxmanAddress, revenue, revenuemanAddress } = {
       ...FEE_OPTIONS(this._provider.wallet.publicKey.toBase58()),
@@ -682,31 +691,29 @@ class InterDAO {
     const taxmanPublicKey = new web3.PublicKey(taxmanAddress)
     const revenuemanPublicKey = new web3.PublicKey(revenuemanAddress)
 
-    const txId = await this.program.rpc.voteAgainst(
-      index,
-      amount,
-      tax,
-      revenue,
-      {
-        accounts: {
-          authority: authorityPublicKey,
-          src: srcPublicKey,
-          treasurer: treasurerPublicKey,
-          mint: mintPublicKey,
-          treasury: treasuryPublicKey,
-          proposal: proposalPublicKey,
-          dao: daoPublicKey,
-          receipt: receiptPublicKey,
-          taxman: taxmanPublicKey,
-          revenueman: revenuemanPublicKey,
-          tokenProgram: utils.token.TOKEN_PROGRAM_ID,
-          associatedTokenProgram: utils.token.ASSOCIATED_PROGRAM_ID,
-          systemProgram: web3.SystemProgram.programId,
-          rent: web3.SYSVAR_RENT_PUBKEY,
-        },
-      },
-    )
-    return { txId, receiptAddress }
+    let txId = ''
+    const tx = await this.program.methods
+      .voteAgainst(index, amount, tax, revenue)
+      .accounts({
+        authority: authorityPublicKey,
+        src: srcPublicKey,
+        treasurer: treasurerPublicKey,
+        mint: mintPublicKey,
+        treasury: treasuryPublicKey,
+        proposal: proposalPublicKey,
+        dao: daoPublicKey,
+        receipt: receiptPublicKey,
+        taxman: taxmanPublicKey,
+        revenueman: revenuemanPublicKey,
+        tokenProgram: utils.token.TOKEN_PROGRAM_ID,
+        associatedTokenProgram: utils.token.ASSOCIATED_PROGRAM_ID,
+        systemProgram: web3.SystemProgram.programId,
+        rent: web3.SYSVAR_RENT_PUBKEY,
+      })
+      .transaction()
+
+    if (sendAndConfirm) txId = await this._provider.sendAndConfirm(tx)
+    return { txId, receiptAddress, tx }
   }
 
   /**
@@ -720,6 +727,7 @@ class InterDAO {
     proposalAddress: string,
     mintNFTAddress: string,
     feeOptions: Partial<FeeOptions> = {},
+    sendAndConfirm = true,
   ) => {
     const { tax, taxmanAddress, revenue, revenuemanAddress } = {
       ...FEE_OPTIONS(this._provider.wallet.publicKey.toBase58()),
@@ -759,8 +767,10 @@ class InterDAO {
     const taxmanPublicKey = new web3.PublicKey(taxmanAddress)
     const revenuemanPublicKey = new web3.PublicKey(revenuemanAddress)
 
-    const txId = await this.program.rpc.voteNftAgainst(index, tax, revenue, {
-      accounts: {
+    let txId = ''
+    let tx = await this.program.methods
+      .voteNftAgainst(index, tax, revenue)
+      .accounts({
         authority: authorityPublicKey,
         src: srcPublicKey,
         treasurer: treasurerPublicKey,
@@ -776,9 +786,10 @@ class InterDAO {
         associatedTokenProgram: utils.token.ASSOCIATED_PROGRAM_ID,
         systemProgram: web3.SystemProgram.programId,
         rent: web3.SYSVAR_RENT_PUBKEY,
-      },
-    })
-    return { txId, receiptAddress }
+      })
+      .transaction()
+    if (sendAndConfirm) txId = await this._provider.sendAndConfirm(tx)
+    return { txId, receiptAddress, tx }
   }
 
   /**
@@ -787,7 +798,7 @@ class InterDAO {
    * @param amount Amount of tokens to void.
    * @returns { txId, receiptAddress }
    */
-  close = async (receiptAddress: string) => {
+  close = async (receiptAddress: string, sendAndConfirm = true) => {
     if (!isAddress(receiptAddress)) throw new Error('Invalid receipt address')
 
     const { proposal: proposalPublicKey } = await this.getReceiptData(
@@ -817,8 +828,10 @@ class InterDAO {
     if (currentTime <= endDate.toNumber())
       throw new Error('The proposal is not ended yet')
 
-    const txId = await this.program.rpc.close({
-      accounts: {
+    let txId = ''
+    const tx = await this.program.methods
+      .close()
+      .accounts({
         authority: authorityPublicKey,
         dst: dstPublicKey,
         treasurer: treasurerPublicKey,
@@ -831,9 +844,12 @@ class InterDAO {
         associatedTokenProgram: utils.token.ASSOCIATED_PROGRAM_ID,
         systemProgram: web3.SystemProgram.programId,
         rent: web3.SYSVAR_RENT_PUBKEY,
-      },
-    })
-    return { txId, receiptAddress }
+      })
+      .transaction()
+    if (sendAndConfirm) {
+      txId = await this._provider.sendAndConfirm(tx)
+    }
+    return { txId, receiptAddress, tx }
   }
 
   /**
@@ -841,7 +857,7 @@ class InterDAO {
    * @param receiptAddress Receipt address.
    * @returns { txId, receiptAddress }
    */
-  closeNftVoting = async (receiptAddress: string) => {
+  closeNftVoting = async (receiptAddress: string, sendAndConfirm = true) => {
     if (!isAddress(receiptAddress)) throw new Error('Invalid receipt address')
 
     const { proposal: proposalPublicKey, mint: nftPublicKey } =
@@ -868,8 +884,11 @@ class InterDAO {
     const currentTime = await this.getCurrentUnixTimestamp()
     if (currentTime <= endDate.toNumber())
       throw new Error('The proposal is not ended yet')
-    const txId = await this.program.rpc.closeNftVoting({
-      accounts: {
+
+    let txId = ''
+    const tx = await this.program.methods
+      .closeNftVoting()
+      .accounts({
         authority: authorityPublicKey,
         dst: dstPublicKey,
         treasurer: treasurerPublicKey,
@@ -883,9 +902,10 @@ class InterDAO {
         associatedTokenProgram: utils.token.ASSOCIATED_PROGRAM_ID,
         systemProgram: web3.SystemProgram.programId,
         rent: web3.SYSVAR_RENT_PUBKEY,
-      },
-    })
-    return { txId, receiptAddress }
+      })
+      .transaction()
+    if (sendAndConfirm) txId = await this._provider.sendAndConfirm(tx)
+    return { txId, receiptAddress, tx }
   }
 
   /**
@@ -964,6 +984,37 @@ class InterDAO {
       },
     })
     return { txId }
+  }
+
+  initializeIpfsol = async (
+    discriminator: Buffer | Uint8Array,
+    cid: Buffer | Uint8Array,
+    sendAndConfirm = true,
+  ) => {
+    if (discriminator.length !== 8)
+      throw new Error('Invalid discriminator path')
+    if (cid.length !== 32) throw new Error('Invalid metadata path')
+
+    const [ipfsol] = await web3.PublicKey.findProgramAddress(
+      [
+        Buffer.from('ipfsol'),
+        discriminator,
+        this._provider.wallet.publicKey.toBuffer(),
+      ],
+      this.program.programId,
+    )
+
+    let txId = ''
+    const tx = await this.program.methods
+      .initializeIpfsol(Array.from(discriminator), Array.from(cid))
+      .accounts({
+        authority: this._provider.wallet.publicKey,
+        ipfsol,
+        systemProgram: web3.SystemProgram.programId,
+      })
+      .transaction()
+    if (sendAndConfirm) txId = await this._provider.sendAndConfirm(tx)
+    return { txId, tx }
   }
 }
 

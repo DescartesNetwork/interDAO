@@ -1,15 +1,15 @@
 [features]
 seeds = false
 [programs.localnet]
-inter_dao = "7FKRyt1oxi7zszLkK5xXzbc5vHnR4MEmyUKrRn7Rwpgt"
+inter_dao = "BND6UZZG2rLGtaYLioBtXFnrBtvtp5g6YXWKEc4LLqrJ"
 [programs.devnet]
-inter_dao = "7FKRyt1oxi7zszLkK5xXzbc5vHnR4MEmyUKrRn7Rwpgt"
+inter_dao = "BND6UZZG2rLGtaYLioBtXFnrBtvtp5g6YXWKEc4LLqrJ"
 
 [registry]
 url = "https://anchor.projectserum.com"
 
 [provider]
-cluster = "devnet"
+cluster = "localnet"
 wallet = "./wallet-keypair.json"
 
 [scripts]
