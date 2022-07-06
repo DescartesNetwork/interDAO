@@ -1,7 +1,7 @@
 // @ts-ignore
 import * as soproxABI from 'soprox-abi'
 import { web3, Program, utils, BN, AnchorProvider } from '@project-serum/anchor'
-import { InterDao } from '../target/types/inter_dao'
+import { InterDao } from './inter_dao'
 
 import {
   DEFAULT_RPC_ENDPOINT,
