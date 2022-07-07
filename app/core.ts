@@ -21,6 +21,7 @@ import {
   FeeOptions,
   IdlEvents,
   InvokedAccount,
+  IpfsolData,
   ProposalData,
   ReceiptData,
 } from './types'
@@ -139,6 +140,15 @@ class InterDAO {
    */
   parseProposalData = (data: Buffer): ProposalData => {
     return this.program.coder.accounts.decode('proposal', data)
+  }
+
+  /**
+   * Parse Ipfsol buffer data.
+   * @param data Ipfsol buffer data.
+   * @returns Ipfsol readable data.
+   */
+  parseIpfsolData = (data: Buffer): IpfsolData => {
+    return this.program.coder.accounts.decode('ipfsol', data)
   }
 
   /**
@@ -986,6 +996,18 @@ class InterDAO {
     return { txId }
   }
 
+  deriveIpfsolAdrress = async (discriminator: Buffer | Uint8Array) => {
+    const [ipfsol] = await web3.PublicKey.findProgramAddress(
+      [
+        Buffer.from('ipfsol'),
+        discriminator,
+        this._provider.wallet.publicKey.toBuffer(),
+      ],
+      this.program.programId,
+    )
+    return ipfsol
+  }
+
   initializeIpfsol = async (
     discriminator: Buffer | Uint8Array,
     cid: Buffer | Uint8Array,
@@ -995,14 +1017,7 @@ class InterDAO {
       throw new Error('Invalid discriminator path')
     if (cid.length !== 32) throw new Error('Invalid metadata path')
 
-    const [ipfsol] = await web3.PublicKey.findProgramAddress(
-      [
-        Buffer.from('ipfsol'),
-        discriminator,
-        this._provider.wallet.publicKey.toBuffer(),
-      ],
-      this.program.programId,
-    )
+    const ipfsol = await this.deriveIpfsolAdrress(discriminator)
 
     let txId = ''
     const tx = await this.program.methods
