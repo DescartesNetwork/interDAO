@@ -21,7 +21,7 @@ import {
   FeeOptions,
   IdlEvents,
   InvokedAccount,
-  IpfsolData,
+  ContentData,
   ProposalData,
   ReceiptData,
 } from './types'
@@ -143,12 +143,12 @@ class InterDAO {
   }
 
   /**
-   * Parse Ipfsol buffer data.
-   * @param data Ipfsol buffer data.
-   * @returns Ipfsol readable data.
+   * Parse content buffer data.
+   * @param data Content buffer data.
+   * @returns Content readable data.
    */
-  parseIpfsolData = (data: Buffer): IpfsolData => {
-    return this.program.coder.accounts.decode('ipfsol', data)
+  parseContentData = (data: Buffer): ContentData => {
+    return this.program.coder.accounts.decode('content', data)
   }
 
   /**
@@ -421,6 +421,20 @@ class InterDAO {
       throw new Error(
         'Invalid length of pubkeys and thier flags (isSigner, isWritable, isMaster)',
       )
+
+    // Compare Signer
+    const isSignersCompared: boolean[] = []
+    for (let i = 0; i < isSigners.length; i++) {
+      const singer = pubkeys.find((pk, idx) => {
+        return (
+          pubkeys[i].toBase58() === pk.toBase58() &&
+          isSigners[idx] === true &&
+          i !== idx
+        )
+      })
+      isSignersCompared.push(singer ? true : isSigners[i])
+    }
+
     const currentTime = await this.getCurrentUnixTimestamp()
     if (startDate <= currentTime) throw new Error('Invalid start date')
     if (endDate <= startDate) throw new Error('Invalid end date')
@@ -437,7 +451,7 @@ class InterDAO {
     const txId = await this.program.rpc.initializeProposal(
       data,
       pubkeys,
-      isSigners,
+      isSignersCompared,
       isWritables,
       isMasters,
       consensusMechanism,
@@ -996,35 +1010,34 @@ class InterDAO {
     return { txId }
   }
 
-  deriveIpfsolAdrress = async (discriminator: Buffer | Uint8Array) => {
-    const [ipfsol] = await web3.PublicKey.findProgramAddress(
+  deriveContentAddress = async (discriminator: Buffer | Uint8Array) => {
+    const [content] = await web3.PublicKey.findProgramAddress(
       [
-        Buffer.from('ipfsol'),
+        Buffer.from('content'),
         discriminator,
         this._provider.wallet.publicKey.toBuffer(),
       ],
       this.program.programId,
     )
-    return ipfsol
+    return content
   }
 
-  initializeIpfsol = async (
+  initializeContent = async (
     discriminator: Buffer | Uint8Array,
-    cid: Buffer | Uint8Array,
+    metadata: Buffer | Uint8Array,
     sendAndConfirm = true,
   ) => {
     if (discriminator.length !== 8)
       throw new Error('Invalid discriminator path')
-    if (cid.length !== 32) throw new Error('Invalid metadata path')
+    if (metadata.length !== 32) throw new Error('Invalid metadata path')
 
-    const ipfsol = await this.deriveIpfsolAdrress(discriminator)
-
+    const content = await this.deriveContentAddress(discriminator)
     let txId = ''
     const tx = await this.program.methods
-      .initializeIpfsol(Array.from(discriminator), Array.from(cid))
+      .initializeContent(Array.from(discriminator), Array.from(metadata))
       .accounts({
         authority: this._provider.wallet.publicKey,
-        ipfsol,
+        content,
         systemProgram: web3.SystemProgram.programId,
       })
       .transaction()

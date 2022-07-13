@@ -9,7 +9,7 @@ export type AnchorWallet = Wallet
 export type DaoData = IdlAccounts<InterDao>['dao']
 export type ProposalData = IdlAccounts<InterDao>['proposal']
 export type ReceiptData = IdlAccounts<InterDao>['receipt']
-export type IpfsolData = IdlAccounts<InterDao>['ipfsol']
+export type ContentData = IdlAccounts<InterDao>['content']
 
 export type DaoRegime = IdlTypes<InterDao>['DaoRegime']
 export const DaoRegimes: Record<string, DaoRegime> = {

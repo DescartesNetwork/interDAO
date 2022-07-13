@@ -121,11 +121,11 @@ pub mod inter_dao {
     transfer_authority::exec(ctx)
   }
 
-  pub fn initialize_ipfsol(
-    ctx: Context<InitializeIpfsol>,
+  pub fn initialize_content(
+    ctx: Context<InitializeContent>,
     discriminator: [u8; 8],
-    cid: [u8; 32],
+    metadata: [u8; 32],
   ) -> Result<()> {
-    initialize_ipfsol::exec(ctx, discriminator, cid)
+    initialize_content::exec(ctx, discriminator, metadata)
   }
 }
