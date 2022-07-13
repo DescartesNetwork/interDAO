@@ -422,17 +422,17 @@ class InterDAO {
         'Invalid length of pubkeys and thier flags (isSigner, isWritable, isMaster)',
       )
 
-    // Compare Signer
-    const isSignersCompared: boolean[] = []
-    for (let i = 0; i < isSigners.length; i++) {
-      const singer = pubkeys.find((pk, idx) => {
+    // Compare isWritable
+    const isWritablesCompared: boolean[] = []
+    for (let i = 0; i < isWritables.length; i++) {
+      const pubkey = pubkeys.find((pk, idx) => {
         return (
           pubkeys[i].toBase58() === pk.toBase58() &&
-          isSigners[idx] === true &&
+          isWritables[idx] === true &&
           i !== idx
         )
       })
-      isSignersCompared.push(singer ? true : isSigners[i])
+      isWritablesCompared.push(pubkey ? true : isWritables[i])
     }
 
     const currentTime = await this.getCurrentUnixTimestamp()
@@ -451,8 +451,8 @@ class InterDAO {
     const txId = await this.program.rpc.initializeProposal(
       data,
       pubkeys,
-      isSignersCompared,
-      isWritables,
+      isSigners,
+      isWritablesCompared,
       isMasters,
       consensusMechanism,
       consensusQuorum,
