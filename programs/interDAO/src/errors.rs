@@ -14,10 +14,14 @@ pub enum ErrorCode {
   NotStartedProposal,
   #[msg("The proposal isn't ended yet")]
   NotEndedProposal,
+  #[msg("The proposal is started")]
+  StartedProposal,
   #[msg("The proposal had been ended")]
   EndedProposal,
   #[msg("The proposal had been executed")]
   ExecutedProposal,
+  #[msg("Invalid proposal instruction index")]
+  InvalidProposalIdx,
   #[msg("No permission")]
   NoPermission,
   #[msg("Cannot derive the program address")]

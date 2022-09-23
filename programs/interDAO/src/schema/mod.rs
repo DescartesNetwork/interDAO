@@ -6,3 +6,5 @@ pub mod receipt;
 pub use receipt::*;
 pub mod content;
 pub use content::*;
+pub mod proposal_instruction;
+pub use proposal_instruction::*;

@@ -1,6 +1,6 @@
 
 build:
-	anchor build && npm run build && solana airdrop 2 6prwtH1kuDmy6MDtcRs9h3EaUL3xiDcgiiHdCMpnVLFD
+	anchor build && npm run build
 .PHONY: build
 
 test:

@@ -1,5 +1,5 @@
 use crate::errors::ErrorCode;
-use crate::schema::{dao::*, proposal::*};
+use crate::schema::{dao::*, proposal::*, proposal_instruction::*};
 use crate::traits::{Age, Consensus, Permission};
 use anchor_lang::{
   prelude::*,
@@ -7,13 +7,13 @@ use anchor_lang::{
 };
 
 #[event]
-pub struct ExecuteProposalEvent {
+pub struct ExecuteProposalInstructionEvent {
   pub proposal: Pubkey,
   pub caller: Pubkey,
 }
 
 #[derive(Accounts)]
-pub struct ExecuteProposal<'info> {
+pub struct ExecuteProposalInstruction<'info> {
   #[account(mut)]
   pub caller: Signer<'info>,
   #[account(
@@ -27,6 +27,12 @@ pub struct ExecuteProposal<'info> {
     has_one = dao
   )]
   pub proposal: Account<'info, Proposal>,
+  #[account(
+    mut,
+    has_one = proposal
+  )]
+  pub proposal_instruction: Account<'info, ProposalInstruction>,
+
   pub dao: Account<'info, Dao>,
   #[account(
     seeds = [
@@ -41,9 +47,10 @@ pub struct ExecuteProposal<'info> {
   pub invoked_program: AccountInfo<'info>,
 }
 
-pub fn exec(ctx: Context<ExecuteProposal>) -> Result<()> {
+pub fn exec(ctx: Context<ExecuteProposalInstruction>) -> Result<()> {
   let dao = &ctx.accounts.dao;
   let proposal = &mut ctx.accounts.proposal;
+  let proposal_instruction = &mut ctx.accounts.proposal_instruction;
   // Validate permission & consensus
   if !dao.is_authorized_to_execute(ctx.accounts.caller.key()) {
     return err!(ErrorCode::NoPermission);
@@ -54,14 +61,20 @@ pub fn exec(ctx: Context<ExecuteProposal>) -> Result<()> {
   if !proposal.is_consented() || !proposal.is_ended() {
     return err!(ErrorCode::NotConsentedProposal);
   }
-  // Validate data
-  if proposal.accounts_len as usize != ctx.remaining_accounts.len() {
+  // Validate proposal_instruction data
+  if proposal_instruction.is_executed() {
+    return err!(ErrorCode::ExecutedProposal);
+  }
+  if proposal_instruction.index != proposal.total_executed {
+    return err!(ErrorCode::InvalidProposalIdx);
+  }
+  if proposal_instruction.accounts_len as usize != ctx.remaining_accounts.len() {
     return err!(ErrorCode::InvalidDataLength);
   }
-  if proposal.invoked_program != ctx.accounts.invoked_program.key() {
+  if proposal_instruction.invoked_program != ctx.accounts.invoked_program.key() {
     return err!(ErrorCode::InconsistentProposal);
   }
-  for (i, acc) in proposal.accounts.iter().enumerate() {
+  for (i, acc) in proposal_instruction.accounts.iter().enumerate() {
     if acc.pubkey != ctx.remaining_accounts[i].key()
       || (acc.is_signer && !acc.is_master) != ctx.remaining_accounts[i].is_signer
       || acc.is_writable != ctx.remaining_accounts[i].is_writable
@@ -70,9 +83,9 @@ pub fn exec(ctx: Context<ExecuteProposal>) -> Result<()> {
     }
   }
   // Build cross program instruction
-  let data = proposal.data.clone();
-  let mut accounts = Vec::with_capacity(proposal.accounts_len as usize);
-  for acc in proposal.accounts.iter() {
+  let data = proposal_instruction.data.clone();
+  let mut accounts = Vec::with_capacity(proposal_instruction.accounts_len as usize);
+  for acc in proposal_instruction.accounts.iter() {
     accounts.push(if acc.is_writable {
       AccountMeta::new(acc.pubkey, acc.is_signer)
     } else {
@@ -80,7 +93,7 @@ pub fn exec(ctx: Context<ExecuteProposal>) -> Result<()> {
     })
   }
   let ix = Instruction {
-    program_id: proposal.invoked_program,
+    program_id: proposal_instruction.invoked_program,
     accounts,
     data,
   };
@@ -91,9 +104,14 @@ pub fn exec(ctx: Context<ExecuteProposal>) -> Result<()> {
   ]];
   invoke_signed(&ix, ctx.remaining_accounts, seeds)?;
   // Success
-  proposal.executed = true;
+  proposal_instruction.executed = true;
+  proposal.total_executed = proposal.total_executed + 1;
+  // Check executed all instruction
+  if proposal.total_executed == proposal.total_instruction {
+    proposal.executed = true
+  }
 
-  emit!(ExecuteProposalEvent {
+  emit!(ExecuteProposalInstructionEvent {
     proposal: proposal.key(),
     caller: ctx.accounts.caller.key()
   });

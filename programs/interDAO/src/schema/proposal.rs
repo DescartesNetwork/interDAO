@@ -44,27 +44,16 @@ impl Default for ConsensusQuorum {
   }
 }
 
-#[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, Debug, PartialEq)]
-pub struct InvokedAccount {
-  pub pubkey: Pubkey,
-  pub is_signer: bool,
-  pub is_writable: bool,
-  pub is_master: bool,
-}
-
 #[account]
 pub struct Proposal {
   pub index: u64,
   pub creator: Pubkey,
   pub dao: Pubkey,
-  pub invoked_program: Pubkey,
-  pub data_len: u64,
-  pub data: Vec<u8>,
-  pub accounts_len: u8,
-  pub accounts: Vec<InvokedAccount>,
   pub regime: DaoRegime,
   pub consensus_mechanism: ConsensusMechanism,
   pub consensus_quorum: ConsensusQuorum,
+  pub total_instruction: u8,
+  pub total_executed: u8,
   pub executed: bool,
   pub voting_for_power: u128,
   pub voting_against_power: u128,
@@ -75,16 +64,10 @@ pub struct Proposal {
 }
 
 impl Proposal {
-  pub const HEADER_LEN: usize = DISCRIMINATOR_SIZE
+  pub const LEN: usize = DISCRIMINATOR_SIZE
     + U64_SIZE
-    + PUBKEY_SIZE
-    + PUBKEY_SIZE
-    + PUBKEY_SIZE
-    + U64_SIZE
-    + U8_SIZE
-    + U8_SIZE
-    + U8_SIZE
-    + U8_SIZE
+    + PUBKEY_SIZE * 2
+    + U8_SIZE * 5
     + BOOL_SIZE
     + U128_SIZE
     + U128_SIZE

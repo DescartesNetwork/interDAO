@@ -63,6 +63,8 @@ describe('interDAO', () => {
   const currentTime = Math.floor(Number(new Date()) / 1000)
   let listeners: number[] = []
 
+  let proposalInstructions = [web3.Keypair.generate(), web3.Keypair.generate()]
+
   before(async () => {
     // Init a mint
     await initializeMint(9, mint, provider, spl)
@@ -180,6 +182,34 @@ describe('interDAO', () => {
   })
 
   it('initialize a proposal', async () => {
+    console.log('currentTime', currentTime)
+    await program.methods
+      .initializeProposal(
+        ConsensusMechanisms.LockedTokenCounter,
+        ConsensusQuorums.Half,
+        new BN(currentTime + 10),
+        new BN(currentTime + 20),
+        PRIMARY_DUMMY_METADATA,
+        new BN(10 ** 6), // tax
+        new BN(10 ** 6), // revenue
+      )
+      .accounts({
+        caller: provider.wallet.publicKey,
+        proposal,
+        dao: dao.publicKey,
+        invokedProgram: utils.token.TOKEN_PROGRAM_ID,
+        systemProgram: web3.SystemProgram.programId,
+        rent: web3.SYSVAR_RENT_PUBKEY,
+        taxman: provider.wallet.publicKey,
+        revenueman: provider.wallet.publicKey,
+      })
+      .rpc()
+
+    const { startDate } = await program.account.proposal.fetch(proposal)
+    console.log('startDate', startDate.toNumber())
+  })
+
+  it('initialize a proposal instruction', async () => {
     const buf = new soproxABI.struct(
       [
         { key: 'code', type: 'u8' },
@@ -191,36 +221,36 @@ describe('interDAO', () => {
     const isSigners = [false, false, true]
     const isWritables = [true, true, true]
     const isMasters = [false, false, true]
-    await program.rpc.initializeProposal(
-      buf.toBuffer(),
-      pubkeys,
-      isSigners,
-      isWritables,
-      isMasters,
-      ConsensusMechanisms.LockedTokenCounter,
-      ConsensusQuorums.Half,
-      new BN(currentTime + 10),
-      new BN(currentTime + 60),
-      PRIMARY_DUMMY_METADATA,
-      new BN(10 ** 6), // tax
-      new BN(10 ** 6), // revenue
-      {
-        accounts: {
-          caller: provider.wallet.publicKey,
-          proposal,
-          dao: dao.publicKey,
-          invokedProgram: utils.token.TOKEN_PROGRAM_ID,
-          systemProgram: web3.SystemProgram.programId,
-          rent: web3.SYSVAR_RENT_PUBKEY,
-          taxman: provider.wallet.publicKey,
-          revenueman: provider.wallet.publicKey,
-        },
-      },
+
+    await Promise.all(
+      proposalInstructions.map(async (ix, idx) => {
+        await program.methods
+          .initializeProposalInstruction(
+            buf.toBuffer(),
+            pubkeys,
+            isSigners,
+            isWritables,
+            isMasters,
+          )
+          .accounts({
+            caller: provider.wallet.publicKey,
+            proposal,
+            proposalInstruction: ix.publicKey,
+            dao: dao.publicKey,
+            invokedProgram: utils.token.TOKEN_PROGRAM_ID,
+            systemProgram: web3.SystemProgram.programId,
+            rent: web3.SYSVAR_RENT_PUBKEY,
+          })
+          .signers([ix])
+          .rpc()
+
+        console.log('=======IDX====== ', idx)
+        const { dataLen, data, accountsLen, accounts } =
+          await program.account.proposalInstruction.fetch(ix.publicKey)
+        console.log('1. Proposal data', dataLen.toString(), data)
+        console.log('2. Proposal data', accountsLen.toString(), accounts)
+      }),
     )
-    const { dataLen, data, accountsLen, accounts } =
-      await program.account.proposal.fetch(proposal)
-    console.log('1. Proposal data', dataLen.toString(), data)
-    console.log('2. Proposal data', accountsLen.toString(), accounts)
   })
 
   it('vote for the proposal', async () => {
@@ -283,8 +313,8 @@ describe('interDAO', () => {
     console.log('Next Voting-Against Power', nextVotingAgainstPower.toString())
   })
 
-  it('execute the proposal', async () => {
-    await asyncWait(60000) // Wait for a minute
+  it('execute the proposal instruction', async () => {
+    await asyncWait(20000) // Wait for a minute
 
     const { amount: prevAmount } = await spl.account.token.fetch(daoTreasury)
     console.log('Prev Amount', prevAmount.toString())
@@ -294,19 +324,26 @@ describe('interDAO', () => {
       { pubkey: tokenAccount, isSigner: false, isWritable: true },
       { pubkey: master, isSigner: false, isWritable: true },
     ]
-    await program.rpc.executeProposal({
-      accounts: {
-        caller: provider.wallet.publicKey,
-        proposal,
-        dao: dao.publicKey,
-        master,
-        invokedProgram: spl.programId,
-      },
-      remainingAccounts,
-    })
+    await Promise.all(
+      proposalInstructions.map(async (ix, idx) => {
+        await program.methods
+          .executeProposalInstruction()
+          .accounts({
+            caller: provider.wallet.publicKey,
+            proposal,
+            proposalInstruction: ix.publicKey,
+            dao: dao.publicKey,
+            master,
+            invokedProgram: spl.programId,
+          })
+          .remainingAccounts(remainingAccounts)
 
-    const { amount: nextAmount } = await spl.account.token.fetch(daoTreasury)
-    console.log('Next Amount', nextAmount.toString())
+        const { amount: nextAmount } = await spl.account.token.fetch(
+          daoTreasury,
+        )
+        console.log(idx, ' Next Amount', nextAmount.toString())
+      }),
+    )
   })
 
   it('close the vote-for receipt', async () => {

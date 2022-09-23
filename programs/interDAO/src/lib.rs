@@ -30,11 +30,6 @@ pub mod inter_dao {
 
   pub fn initialize_proposal(
     ctx: Context<InitializeProposal>,
-    data: Vec<u8>,
-    pubkeys: Vec<Pubkey>,
-    is_signers: Vec<bool>,
-    is_writables: Vec<bool>,
-    is_masters: Vec<bool>,
     consensus_mechanism: ConsensusMechanism,
     consesus_quorum: ConsensusQuorum,
     start_date: i64,
@@ -45,11 +40,6 @@ pub mod inter_dao {
   ) -> Result<()> {
     initialize_proposal::exec(
       ctx,
-      data,
-      pubkeys,
-      is_signers,
-      is_writables,
-      is_masters,
       consensus_mechanism,
       consesus_quorum,
       start_date,
@@ -58,6 +48,17 @@ pub mod inter_dao {
       tax,
       revenue,
     )
+  }
+
+  pub fn initialize_proposal_instruction(
+    ctx: Context<InitializeProposalInstruction>,
+    data: Vec<u8>,
+    pubkeys: Vec<Pubkey>,
+    is_signers: Vec<bool>,
+    is_writables: Vec<bool>,
+    is_masters: Vec<bool>,
+  ) -> Result<()> {
+    initialize_proposal_instruction::exec(ctx, data, pubkeys, is_signers, is_writables, is_masters)
   }
 
   pub fn vote_for(
@@ -93,8 +94,8 @@ pub mod inter_dao {
     vote_nft_against::exec(ctx, index, tax, revenue)
   }
 
-  pub fn execute_proposal(ctx: Context<ExecuteProposal>) -> Result<()> {
-    execute_proposal::exec(ctx)
+  pub fn execute_proposal_instruction(ctx: Context<ExecuteProposalInstruction>) -> Result<()> {
+    execute_proposal_instruction::exec(ctx)
   }
 
   pub fn close(ctx: Context<Close>) -> Result<()> {
