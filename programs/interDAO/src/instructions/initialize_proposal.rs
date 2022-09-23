@@ -1,4 +1,3 @@
-use crate::constants::*;
 use crate::errors::ErrorCode;
 use crate::schema::{dao::*, proposal::*};
 use crate::traits::Permission;

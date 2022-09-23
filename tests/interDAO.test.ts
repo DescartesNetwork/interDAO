@@ -324,26 +324,26 @@ describe('interDAO', () => {
       { pubkey: tokenAccount, isSigner: false, isWritable: true },
       { pubkey: master, isSigner: false, isWritable: true },
     ]
-    await Promise.all(
-      proposalInstructions.map(async (ix, idx) => {
-        await program.methods
-          .executeProposalInstruction()
-          .accounts({
-            caller: provider.wallet.publicKey,
-            proposal,
-            proposalInstruction: ix.publicKey,
-            dao: dao.publicKey,
-            master,
-            invokedProgram: spl.programId,
-          })
-          .remainingAccounts(remainingAccounts)
 
-        const { amount: nextAmount } = await spl.account.token.fetch(
-          daoTreasury,
-        )
-        console.log(idx, ' Next Amount', nextAmount.toString())
-      }),
-    )
+    for (const ix of proposalInstructions) {
+      await program.methods
+        .executeProposalInstruction()
+        .accounts({
+          caller: provider.wallet.publicKey,
+          proposal,
+          proposalInstruction: ix.publicKey,
+          dao: dao.publicKey,
+          master,
+          invokedProgram: spl.programId,
+        })
+        .remainingAccounts(remainingAccounts)
+        .rpc()
+
+      const { amount: nextAmount } = await spl.account.token.fetch(daoTreasury)
+      const { totalExecuted } = await program.account.proposal.fetch(proposal)
+      console.log('totalExecuted', totalExecuted.toString())
+      console.log(' Next Amount', nextAmount.toString())
+    }
   })
 
   it('close the vote-for receipt', async () => {
