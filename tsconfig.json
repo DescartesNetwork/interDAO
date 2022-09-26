@@ -10,7 +10,7 @@
     "strict": true,
     "resolveJsonModule": true,
     "declaration": true,
-    "noImplicitAny": false
+    "skipLibCheck": true
   },
   "include": ["app"],
   "exclude": ["node_modules", "tests", "programs"],
