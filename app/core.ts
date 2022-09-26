@@ -1,7 +1,8 @@
 // @ts-ignore
 import * as soproxABI from 'soprox-abi'
 import { web3, Program, utils, BN, AnchorProvider } from '@project-serum/anchor'
-import { InterDao } from './inter_dao'
+
+import { InterDao } from './../target/types/inter_dao'
 
 import {
   DEFAULT_RPC_ENDPOINT,
@@ -379,31 +380,30 @@ class InterDAO {
   /**
    * Initialize a proposal for a DAO.
    * @param daoAddress The token (mint) that be be accepted to vote in the DAO.
-   * @param data The tracsaction data for the action.
-   * @param pubkeys The involved account public keys for the action.
-   * @param isSigners
-   * @param isWritables
-   * @param isMasters
    * @param startDate Start voting
    * @param endDate End voting
    * @param consensusMechanism (Optional) Consensus mechanism. Default is StakedTokenCounter.
    * @returns { txId, proposalAddress }
    */
-  initializeProposal = async (
-    daoAddress: string,
-    invokedProgramAddress: string,
-    data: Buffer | Uint8Array,
-    pubkeys: web3.PublicKey[],
-    isSigners: boolean[],
-    isWritables: boolean[],
-    isMasters: boolean[],
-    startDate: number,
-    endDate: number,
-    metadata: Buffer | Uint8Array,
-    consensusMechanism: ConsensusMechanism = ConsensusMechanisms.StakedTokenCounter,
-    consensusQuorum: ConsensusQuorum = ConsensusQuorums.Half,
-    feeOptions: Partial<FeeOptions> = {},
-  ) => {
+  initializeProposal = async ({
+    daoAddress,
+    startDate,
+    endDate,
+    metadata,
+    consensusMechanism = ConsensusMechanisms.StakedTokenCounter,
+    consensusQuorum = ConsensusQuorums.Half,
+    feeOptions = {},
+    sendAndConfirm = true,
+  }: {
+    daoAddress: string
+    startDate: number
+    endDate: number
+    metadata: Buffer | Uint8Array | number[]
+    consensusMechanism: ConsensusMechanism
+    consensusQuorum: ConsensusQuorum
+    feeOptions?: Partial<FeeOptions>
+    sendAndConfirm?: boolean
+  }) => {
     const { tax, taxmanAddress, revenue, revenuemanAddress } = {
       ...FEE_OPTIONS(this._provider.wallet.publicKey.toBase58()),
       ...feeOptions,
@@ -413,6 +413,79 @@ class InterDAO {
     if (!isAddress(revenuemanAddress))
       throw new Error('Invalid revenue receiver address')
     if (metadata.length !== 32) throw new Error('Invalid metadata path')
+
+    const currentTime = await this.getCurrentUnixTimestamp()
+    if (startDate <= currentTime) throw new Error('Invalid start date')
+    if (endDate <= startDate) throw new Error('Invalid end date')
+
+    const { nonce } = await this.getDaoData(daoAddress)
+
+    const proposalAddress = await this.deriveProposalAddress(daoAddress, nonce)
+    const proposalPublicKey = new web3.PublicKey(proposalAddress)
+    const daoPublicKey = new web3.PublicKey(daoAddress)
+    const taxmanPublicKey = new web3.PublicKey(taxmanAddress)
+    const revenuemanPublicKey = new web3.PublicKey(revenuemanAddress)
+
+    const tx = await this.program.methods
+      .initializeProposal(
+        consensusMechanism,
+        consensusQuorum,
+        new BN(startDate),
+        new BN(endDate),
+        Array.from(metadata),
+        tax,
+        revenue,
+      )
+      .accounts({
+        caller: this._provider.wallet.publicKey,
+        proposal: proposalPublicKey,
+        dao: daoPublicKey,
+        systemProgram: web3.SystemProgram.programId,
+        rent: web3.SYSVAR_RENT_PUBKEY,
+        taxman: taxmanPublicKey,
+        revenueman: revenuemanPublicKey,
+      })
+      .transaction()
+
+    let txId = ''
+    if (sendAndConfirm) {
+      txId = await this._provider.sendAndConfirm(tx)
+    }
+
+    return { txId, tx }
+  }
+
+  /**
+   * Initialize a proposal for a DAO.
+   * @param daoAddress The token (mint) that be be accepted to vote in the DAO.
+   * @param data The tracsaction data for the action.
+   * @param pubkeys The involved account public keys for the action.
+   * @param isSigners
+   * @param isWritables
+   * @param isMasters
+   * @returns { txId, proposalAddress }
+   */
+  initializeProposalInstruction = async ({
+    proposal,
+    invokedProgramAddress,
+    data,
+    pubkeys,
+    isSigners,
+    isWritables,
+    isMasters,
+    sendAndConfirm,
+    proposalInstruction = web3.Keypair.generate(),
+  }: {
+    proposal: string
+    invokedProgramAddress: string
+    data: Buffer | Uint8Array
+    pubkeys: web3.PublicKey[]
+    isSigners: boolean[]
+    isWritables: boolean[]
+    isMasters: boolean[]
+    proposalInstruction?: web3.Keypair
+    sendAndConfirm?: boolean
+  }) => {
     if (
       pubkeys.length !== isSigners.length ||
       pubkeys.length !== isWritables.length ||
@@ -435,46 +508,33 @@ class InterDAO {
       isWritablesCompared.push(pubkey ? true : isWritables[i])
     }
 
-    const currentTime = await this.getCurrentUnixTimestamp()
-    if (startDate <= currentTime) throw new Error('Invalid start date')
-    if (endDate <= startDate) throw new Error('Invalid end date')
+    const proposalData = await this.getProposalData(proposal)
 
-    const { nonce } = await this.getDaoData(daoAddress)
+    const tx = await this.program.methods
+      .initializeProposalInstruction(
+        data,
+        pubkeys,
+        isSigners,
+        isWritablesCompared,
+        isMasters,
+      )
+      .accounts({
+        caller: this._provider.wallet.publicKey,
+        proposal: new web3.PublicKey(proposal),
+        proposalInstruction: proposalInstruction.publicKey,
+        dao: proposalData.dao,
+        invokedProgram: new web3.PublicKey(invokedProgramAddress),
+        systemProgram: web3.SystemProgram.programId,
+        rent: web3.SYSVAR_RENT_PUBKEY,
+      })
+      .transaction()
 
-    const proposalAddress = await this.deriveProposalAddress(daoAddress, nonce)
-    const proposalPublicKey = new web3.PublicKey(proposalAddress)
-    const daoPublicKey = new web3.PublicKey(daoAddress)
-    const invokedProgramPublicKey = new web3.PublicKey(invokedProgramAddress)
-    const taxmanPublicKey = new web3.PublicKey(taxmanAddress)
-    const revenuemanPublicKey = new web3.PublicKey(revenuemanAddress)
+    let txId = ''
+    if (sendAndConfirm) {
+      txId = await this._provider.sendAndConfirm(tx, [proposalInstruction])
+    }
 
-    const txId = await this.program.rpc.initializeProposal(
-      data,
-      pubkeys,
-      isSigners,
-      isWritablesCompared,
-      isMasters,
-      consensusMechanism,
-      consensusQuorum,
-      new BN(startDate),
-      new BN(endDate),
-      metadata,
-      tax,
-      revenue,
-      {
-        accounts: {
-          caller: this._provider.wallet.publicKey,
-          proposal: proposalPublicKey,
-          dao: daoPublicKey,
-          invokedProgram: invokedProgramPublicKey,
-          systemProgram: web3.SystemProgram.programId,
-          rent: web3.SYSVAR_RENT_PUBKEY,
-          taxman: taxmanPublicKey,
-          revenueman: revenuemanPublicKey,
-        },
-      },
-    )
-    return { txId, proposalAddress }
+    return { txId, tx }
   }
 
   /**
@@ -482,14 +542,13 @@ class InterDAO {
    * @param daoAddress The token (mint) that be be accepted to vote in the DAO.
    * @returns { txId, proposalAddress }
    */
-  executeProposal = async (proposalAddress: string) => {
-    if (!isAddress(proposalAddress)) throw new Error('Invalid proposal address')
+  executeProposal = async (proposalIxAddress: string) => {
+    if (!isAddress(proposalIxAddress))
+      throw new Error('Invalid proposal address')
 
-    const {
-      accounts,
-      dao: daoPublicKey,
-      invokedProgram,
-    } = await this.getProposalData(proposalAddress)
+    const { accounts, dao, invokedProgram, proposal } =
+      await this.program.account.proposalInstruction.fetch(proposalIxAddress)
+
     const remainingAccounts = (accounts as InvokedAccount[]).map(
       ({ pubkey, isSigner, isWritable, isMaster }) => ({
         pubkey,
@@ -498,15 +557,13 @@ class InterDAO {
       }),
     )
 
-    const proposalPublicKey = new web3.PublicKey(proposalAddress)
-    const masterPublicKey = await this.deriveMasterAddress(
-      daoPublicKey.toBase58(),
-    )
-    const txId = await this.program.rpc.executeProposal({
+    const masterPublicKey = await this.deriveMasterAddress(dao.toBase58())
+    const txId = await this.program.rpc.executeProposalInstruction({
       accounts: {
         caller: this._provider.wallet.publicKey,
-        proposal: proposalPublicKey,
-        dao: daoPublicKey,
+        dao,
+        proposal,
+        proposalInstruction: proposalIxAddress,
         master: masterPublicKey,
         invokedProgram,
       },

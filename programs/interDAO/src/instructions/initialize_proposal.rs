@@ -33,8 +33,7 @@ pub struct InitializeProposal<'info> {
   pub proposal: Account<'info, Proposal>,
   #[account(mut)]
   pub dao: Account<'info, Dao>,
-  /// CHECK: Just a pure account
-  pub invoked_program: AccountInfo<'info>,
+
   #[account(mut)]
   /// CHECK: Just a pure account
   pub taxman: AccountInfo<'info>,

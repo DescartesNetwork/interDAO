@@ -8,10 +8,13 @@ import {
   AnchorProvider,
   Program,
 } from '@project-serum/anchor'
-import { InterDao } from '../target/types/inter_dao'
+
 import { initializeAccount, initializeMint } from './pretest'
 import * as soproxABI from 'soprox-abi'
 import { expect } from 'chai'
+import InterDaoProgram from '../dist/app'
+import { InterDao } from '../target/types/inter_dao'
+import { Connection } from '@solana/web3.js'
 
 const { data: PRIMARY_DUMMY_METADATA } = Buffer.from(
   'b2b68b298b9bfa2dd2931cd879e5c9997837209476d25319514b46f7b7911d31',
@@ -43,12 +46,21 @@ export const DaoRegimes = {
   Autonomous: { autonomous: {} },
 }
 
-describe('interDAO', () => {
+describe('Library Test', () => {
   // Configure the client to use the local cluster.
   const provider = AnchorProvider.local()
   setProvider(provider)
 
   const program = workspace.InterDao as Program<InterDao>
+
+  // @ts-ignore
+  const rpc = provider.connection._rpcEndpoint
+  const interDaoProgram = new InterDaoProgram(
+    provider.wallet,
+    rpc,
+    program.programId.toBase58(),
+  )
+
   const spl = Spl.token()
   const mint = new web3.Keypair()
   let tokenAccount: web3.PublicKey
@@ -182,27 +194,14 @@ describe('interDAO', () => {
   })
 
   it('initialize a proposal', async () => {
-    console.log('currentTime', currentTime)
-    await program.methods
-      .initializeProposal(
-        ConsensusMechanisms.LockedTokenCounter,
-        ConsensusQuorums.Half,
-        new BN(currentTime + 10),
-        new BN(currentTime + 20),
-        PRIMARY_DUMMY_METADATA,
-        new BN(10 ** 6), // tax
-        new BN(10 ** 6), // revenue
-      )
-      .accounts({
-        caller: provider.wallet.publicKey,
-        proposal,
-        dao: dao.publicKey,
-        systemProgram: web3.SystemProgram.programId,
-        rent: web3.SYSVAR_RENT_PUBKEY,
-        taxman: provider.wallet.publicKey,
-        revenueman: provider.wallet.publicKey,
-      })
-      .rpc()
+    await interDaoProgram.initializeProposal({
+      daoAddress: dao.publicKey.toBase58(),
+      startDate: currentTime + 10,
+      endDate: currentTime + 20,
+      metadata: PRIMARY_DUMMY_METADATA,
+      consensusMechanism: ConsensusMechanisms.LockedTokenCounter,
+      consensusQuorum: ConsensusQuorums.Half,
+    })
 
     const { startDate } = await program.account.proposal.fetch(proposal)
     console.log('startDate', startDate.toNumber())
@@ -221,35 +220,24 @@ describe('interDAO', () => {
     const isWritables = [true, true, true]
     const isMasters = [false, false, true]
 
-    await Promise.all(
+    const txs = await Promise.all(
       proposalInstructions.map(async (ix, idx) => {
-        await program.methods
-          .initializeProposalInstruction(
-            buf.toBuffer(),
-            pubkeys,
-            isSigners,
-            isWritables,
-            isMasters,
-          )
-          .accounts({
-            caller: provider.wallet.publicKey,
-            proposal,
-            proposalInstruction: ix.publicKey,
-            dao: dao.publicKey,
-            invokedProgram: utils.token.TOKEN_PROGRAM_ID,
-            systemProgram: web3.SystemProgram.programId,
-            rent: web3.SYSVAR_RENT_PUBKEY,
-          })
-          .signers([ix])
-          .rpc()
+        const { tx } = await interDaoProgram.initializeProposalInstruction({
+          proposal: proposal.toBase58(),
+          data: buf.toBuffer(),
+          invokedProgramAddress: utils.token.TOKEN_PROGRAM_ID.toBase58(),
+          isMasters,
+          isSigners,
+          isWritables,
+          pubkeys,
+          proposalInstruction: ix,
+          sendAndConfirm: false,
+        })
 
-        console.log('=======IDX====== ', idx)
-        const { dataLen, data, accountsLen, accounts } =
-          await program.account.proposalInstruction.fetch(ix.publicKey)
-        console.log('1. Proposal data', dataLen.toString(), data)
-        console.log('2. Proposal data', accountsLen.toString(), accounts)
+        return { tx, signers: [ix] }
       }),
     )
+    await provider.sendAll(txs)
   })
 
   it('vote for the proposal', async () => {

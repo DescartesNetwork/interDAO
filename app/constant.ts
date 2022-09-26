@@ -1,7 +1,7 @@
 import bs58 from 'bs58'
 import { BN, BorshAccountsCoder, web3 } from '@project-serum/anchor'
 
-import { IDL } from './inter_dao'
+import { IDL } from '../target/types/inter_dao'
 import { FeeOptions } from './types'
 
 export const DEFAULT_RPC_ENDPOINT = 'https://api.devnet.solana.com'
