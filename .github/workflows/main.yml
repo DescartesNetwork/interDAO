@@ -22,7 +22,7 @@ jobs:
       - name: Welcome
         run: echo Start deploying InterDAO
       - name: Install Solana CLI
-        run: sh -c "$(curl -sSfL https://release.solana.com/stable/install)"
+        run: sh -c "$(curl -sSfL https://release.solana.com/v1.9.29/install)"
       - name: Reload PATH
         run: |
           source ~/.profile && source ~/.bash_profile
@@ -30,7 +30,7 @@ jobs:
           solana --version
       - name: Install dependencies
         run: |
-          npm i -g @project-serum/anchor-cli
+          npm i -g @project-serum/anchor-cli@0.24.2
           npm install
       - name: Build the program and library
         run: |
