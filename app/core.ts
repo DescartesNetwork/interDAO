@@ -466,6 +466,7 @@ class InterDAO {
    * @returns { txId, proposalAddress }
    */
   initializeProposalInstruction = async ({
+    dao,
     proposal,
     invokedProgramAddress,
     data,
@@ -477,6 +478,7 @@ class InterDAO {
     proposalInstruction = web3.Keypair.generate(),
   }: {
     proposal: string
+    dao: string
     invokedProgramAddress: string
     data: Buffer | Uint8Array
     pubkeys: web3.PublicKey[]
@@ -508,8 +510,6 @@ class InterDAO {
       isWritablesCompared.push(pubkey ? true : isWritables[i])
     }
 
-    const proposalData = await this.getProposalData(proposal)
-
     const tx = await this.program.methods
       .initializeProposalInstruction(
         data,
@@ -522,7 +522,7 @@ class InterDAO {
         caller: this._provider.wallet.publicKey,
         proposal: new web3.PublicKey(proposal),
         proposalInstruction: proposalInstruction.publicKey,
-        dao: proposalData.dao,
+        dao,
         invokedProgram: new web3.PublicKey(invokedProgramAddress),
         systemProgram: web3.SystemProgram.programId,
         rent: web3.SYSVAR_RENT_PUBKEY,
