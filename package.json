@@ -1,7 +1,7 @@
 {
   "name": "@interdao/core",
   "version": "2.0.1",
-  "main": "dist/index.js",
+  "main": "dist/app/index.js",
   "scripts": {
     "start": "nodemon app/index.ts",
     "build": "npm run clean && tsc",

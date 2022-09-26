@@ -304,33 +304,12 @@ describe('Library Test', () => {
     await asyncWait(20000) // Wait for a minute
 
     const { amount: prevAmount } = await spl.account.token.fetch(daoTreasury)
-    console.log('Prev Amount', prevAmount.toString())
+    await interDaoProgram.executeProposal({ proposal: proposal.toBase58() })
 
-    const remainingAccounts = [
-      { pubkey: daoTreasury, isSigner: false, isWritable: true },
-      { pubkey: tokenAccount, isSigner: false, isWritable: true },
-      { pubkey: master, isSigner: false, isWritable: true },
-    ]
-
-    for (const ix of proposalInstructions) {
-      await program.methods
-        .executeProposalInstruction()
-        .accounts({
-          caller: provider.wallet.publicKey,
-          proposal,
-          proposalInstruction: ix.publicKey,
-          dao: dao.publicKey,
-          master,
-          invokedProgram: spl.programId,
-        })
-        .remainingAccounts(remainingAccounts)
-        .rpc()
-
-      const { amount: nextAmount } = await spl.account.token.fetch(daoTreasury)
-      const { totalExecuted } = await program.account.proposal.fetch(proposal)
-      console.log('totalExecuted', totalExecuted.toString())
-      console.log(' Next Amount', nextAmount.toString())
-    }
+    const { amount: nextAmount } = await spl.account.token.fetch(daoTreasury)
+    const { totalExecuted } = await program.account.proposal.fetch(proposal)
+    console.log('totalExecuted', totalExecuted.toString())
+    console.log(' Next Amount', nextAmount.toString())
   })
 
   it('close the vote-for receipt', async () => {

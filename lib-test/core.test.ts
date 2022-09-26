@@ -53,6 +53,8 @@ describe('@interdao/core', function () {
     associatedTokenAddress: string,
     currentTime: number
 
+  const proposalIx = web3.Keypair.generate()
+
   before(async () => {
     const { program } = new InterDAO(wallet)
     const provider = program.provider as AnchorProvider
@@ -138,6 +140,24 @@ describe('@interdao/core', function () {
   })
 
   it('initialize a proposal', async () => {
+    // Init
+    const { proposalAddress: _proposalAddress } =
+      await interDAO.initializeProposal({
+        daoAddress,
+        startDate: currentTime + 10,
+        endDate: currentTime + 20,
+        metadata: PRIMARY_DUMMY_METADATA,
+        consensusMechanism: ConsensusMechanisms.LockedTokenCounter,
+        consensusQuorum: ConsensusQuorums.Half,
+        feeOptions: {
+          tax: new BN(10 ** 6),
+          taxmanAddress: wallet.publicKey.toBase58(),
+        },
+      })
+    proposalAddress = _proposalAddress
+  })
+
+  it('initialize a proposal instruction', async () => {
     // Proposal data
     const buf = new soproxABI.struct(
       [
@@ -160,26 +180,16 @@ describe('@interdao/core', function () {
     const isWritables = [true, true, true]
     const isMasters = [false, false, true]
     // Init
-    const { proposalAddress: _proposalAddress } =
-      await interDAO.initializeProposal(
-        daoAddress,
-        utils.token.TOKEN_PROGRAM_ID.toBase58(),
-        buf.toBuffer(),
-        pubkeys,
-        isSigners,
-        isWritables,
-        isMasters,
-        currentTime + 30,
-        currentTime + 60,
-        PRIMARY_DUMMY_METADATA,
-        ConsensusMechanisms.StakedTokenCounter,
-        ConsensusQuorums.Half,
-        {
-          tax: new BN(10 ** 6),
-          taxmanAddress: wallet.publicKey.toBase58(),
-        },
-      )
-    proposalAddress = _proposalAddress
+    await interDAO.initializeProposalInstruction({
+      proposal: proposalAddress,
+      data: buf.toBuffer(),
+      invokedProgramAddress: utils.token.TOKEN_PROGRAM_ID.toBase58(),
+      isMasters,
+      isSigners,
+      isWritables,
+      pubkeys,
+      proposalInstruction: proposalIx,
+    })
   })
 
   it('get proposal data', async () => {

@@ -452,7 +452,7 @@ class InterDAO {
       txId = await this._provider.sendAndConfirm(tx)
     }
 
-    return { txId, tx }
+    return { txId, tx, proposalAddress: proposalPublicKey.toBase58() }
   }
 
   /**
@@ -542,33 +542,53 @@ class InterDAO {
    * @param daoAddress The token (mint) that be be accepted to vote in the DAO.
    * @returns { txId, proposalAddress }
    */
-  executeProposal = async (proposalIxAddress: string) => {
-    if (!isAddress(proposalIxAddress))
-      throw new Error('Invalid proposal address')
+  executeProposal = async ({
+    proposal,
+    sendAndConfirm = true,
+  }: {
+    proposal: string
+    sendAndConfirm?: boolean
+  }) => {
+    if (!isAddress(proposal)) throw new Error('Invalid proposal address')
 
-    const { accounts, dao, invokedProgram, proposal } =
-      await this.program.account.proposalInstruction.fetch(proposalIxAddress)
-
-    const remainingAccounts = (accounts as InvokedAccount[]).map(
-      ({ pubkey, isSigner, isWritable, isMaster }) => ({
-        pubkey,
-        isSigner: isSigner && !isMaster,
-        isWritable,
-      }),
-    )
-
+    const { dao, totalExecuted, totalInstruction } =
+      await this.program.account.proposal.fetch(proposal)
+    const proposalIxs = await this.program.account.proposalInstruction.all([
+      { memcmp: { offset: 8, bytes: proposal } },
+    ])
+    const tx = new web3.Transaction()
     const masterPublicKey = await this.deriveMasterAddress(dao.toBase58())
-    const txId = await this.program.rpc.executeProposalInstruction({
-      accounts: {
-        caller: this._provider.wallet.publicKey,
-        dao,
-        proposal,
-        proposalInstruction: proposalIxAddress,
-        master: masterPublicKey,
-        invokedProgram,
-      },
-      remainingAccounts,
-    })
+
+    for (let i = totalExecuted; i < totalInstruction; i++) {
+      const proposalIx = proposalIxs.find((ix) => ix.account.index === i)!
+      const { accounts, invokedProgram, proposal } = proposalIx.account
+      const remainingAccounts = (accounts as InvokedAccount[]).map(
+        ({ pubkey, isSigner, isWritable, isMaster }) => ({
+          pubkey,
+          isSigner: isSigner && !isMaster,
+          isWritable,
+        }),
+      )
+      const ix = await this.program.methods
+        .executeProposalInstruction()
+        .accounts({
+          caller: this._provider.wallet.publicKey,
+          dao,
+          proposal,
+          proposalInstruction: proposalIx.publicKey,
+          master: masterPublicKey,
+          invokedProgram,
+        })
+        .remainingAccounts(remainingAccounts)
+        .instruction()
+      // Add instruction into tx
+      tx.add(ix)
+    }
+
+    let txId = ''
+    if (sendAndConfirm) {
+      txId = await this._provider.sendAndConfirm(tx)
+    }
     return { txId }
   }
 
