@@ -74,11 +74,14 @@ pub fn exec(ctx: Context<ExecuteProposalInstruction>) -> Result<()> {
   if proposal_instruction.invoked_program != ctx.accounts.invoked_program.key() {
     return err!(ErrorCode::InconsistentProposal);
   }
+
   for (i, acc) in proposal_instruction.accounts.iter().enumerate() {
     if acc.pubkey != ctx.remaining_accounts[i].key()
-      || (acc.is_signer && !acc.is_master) != ctx.remaining_accounts[i].is_signer
-      || acc.is_writable != ctx.remaining_accounts[i].is_writable
+    // || is_signer != ctx.remaining_accounts[i].is_signer
+    // || is_writable != ctx.remaining_accounts[i].is_writable
     {
+      msg!("src pubkey: {:?}", acc.pubkey);
+      msg!("target pubkey: {:?}", ctx.remaining_accounts[i].key());
       return err!(ErrorCode::InconsistentProposal);
     }
   }
