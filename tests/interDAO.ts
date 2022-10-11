@@ -225,6 +225,7 @@ describe('interDAO', () => {
       proposalInstructions.map(async (ix, idx) => {
         await program.methods
           .initializeProposalInstruction(
+            0,
             buf.toBuffer(),
             pubkeys,
             isSigners,
