@@ -13,6 +13,8 @@ pub struct InvokedAccount {
 pub struct ProposalInstruction {
   pub proposal: Pubkey,
   pub index: u8,
+  // Send all transaction
+  pub tx_index: u8,
   pub executed: bool,
   // Data for the inter action
   pub data_len: u64,
@@ -26,7 +28,7 @@ pub struct ProposalInstruction {
 
 impl ProposalInstruction {
   pub const HEADER_LEN: usize =
-    DISCRIMINATOR_SIZE + U8_SIZE + PUBKEY_SIZE + PUBKEY_SIZE + U64_SIZE + U8_SIZE + BOOL_SIZE;
+    DISCRIMINATOR_SIZE + U8_SIZE * 2 + PUBKEY_SIZE + PUBKEY_SIZE + U64_SIZE + U8_SIZE + BOOL_SIZE;
 
   pub fn is_executed(&self) -> bool {
     self.executed

@@ -469,6 +469,7 @@ class InterDAO {
     dao,
     proposal,
     invokedProgramAddress,
+    txIndex,
     data,
     pubkeys,
     isSigners,
@@ -480,6 +481,7 @@ class InterDAO {
     proposal: string
     dao: string
     invokedProgramAddress: string
+    txIndex: number
     data: Buffer | Uint8Array
     pubkeys: web3.PublicKey[]
     isSigners: boolean[]
@@ -512,6 +514,7 @@ class InterDAO {
 
     const tx = await this.program.methods
       .initializeProposalInstruction(
+        txIndex,
         data,
         pubkeys,
         isSigners,

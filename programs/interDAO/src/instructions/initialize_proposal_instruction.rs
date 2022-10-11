@@ -43,6 +43,7 @@ pub struct InitializeProposalInstruction<'info> {
 
 pub fn exec(
   ctx: Context<InitializeProposalInstruction>,
+  tx_idx: u8,
   data: Vec<u8>,
   pubkeys: Vec<Pubkey>,
   is_signers: Vec<bool>,
@@ -80,6 +81,7 @@ pub fn exec(
 
   proposal_instruction.proposal = proposal.key();
   proposal_instruction.index = proposal.total_instruction;
+  proposal_instruction.tx_index = tx_idx;
   proposal_instruction.executed = false;
   // Data for the inter action
   proposal_instruction.data_len = data.len().to_u64().ok_or(ErrorCode::Overflow)?;
