@@ -514,12 +514,12 @@ class InterDAO {
 
     const tx = await this.program.methods
       .initializeProposalInstruction(
-        txIndex,
         data,
         pubkeys,
         isSigners,
         isWritablesCompared,
         isMasters,
+        txIndex,
       )
       .accounts({
         caller: this._provider.wallet.publicKey,

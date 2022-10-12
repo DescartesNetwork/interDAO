@@ -223,6 +223,8 @@ describe('Library Test', () => {
     const txs = await Promise.all(
       proposalInstructions.map(async (ix, idx) => {
         const { tx } = await interDaoProgram.initializeProposalInstruction({
+          txIndex: 1,
+          dao: dao.publicKey.toString(),
           proposal: proposal.toBase58(),
           data: buf.toBuffer(),
           invokedProgramAddress: utils.token.TOKEN_PROGRAM_ID.toBase58(),

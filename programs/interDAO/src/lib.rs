@@ -52,12 +52,12 @@ pub mod inter_dao {
 
   pub fn initialize_proposal_instruction(
     ctx: Context<InitializeProposalInstruction>,
-    tx_idx: u8,
     data: Vec<u8>,
     pubkeys: Vec<Pubkey>,
     is_signers: Vec<bool>,
     is_writables: Vec<bool>,
     is_masters: Vec<bool>,
+    tx_idx: u8,
   ) -> Result<()> {
     initialize_proposal_instruction::exec(
       ctx,
