@@ -62,7 +62,8 @@ impl Permission for Dao {
   }
   fn is_valid_mint_nft(&self, mint_nft: Pubkey, metadata: &AccountInfo) -> bool {
     let metadata: Metadata = Metadata::from_account_info(&metadata.to_account_info()).unwrap();
-    if self.mint == metadata.collection.unwrap().key && mint_nft == metadata.mint {
+    let collection = metadata.collection.unwrap();
+    if self.mint == collection.key && collection.verified && mint_nft == metadata.mint {
       return true;
     }
     return false;
